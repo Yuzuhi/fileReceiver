@@ -1,3 +1,6 @@
+# fileReceiver
+- 利用tkinter模块编写Python语言的GUI程序，通过tcp通信的方式来接收文件
+
 # 数据格式定义
 
 ## Request
