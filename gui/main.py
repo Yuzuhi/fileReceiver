@@ -8,7 +8,9 @@ def main_loop():
     root.title("アニメダウンローダー")
     root.geometry("500x300+100+200")
 
-    Application(master=root)
+    server_ip = "47.110.232.162"
+    server_port = 8021
+    Application(server_ip, server_port, master=root)
 
     root.mainloop()
 

@@ -7,54 +7,40 @@ from gui.events import Events
 
 
 class Application(tkinter.Frame):
-    anime_path = "../anime"
+    video_path = "../video"
 
-    def __init__(self, master: tkinter.Tk = None):
+    def __init__(self, server_ip: str, server_port: int, master: tkinter.Tk = None):
         super().__init__(master)
         self.master = master
         self.pack()
-        self.events = Events(123, self.master)
-        self.session = SessionHandler(1, 2, 3, 4)
-
-        self.anime_dict = dict()
-        self.dirs = self.session.get_dirs()
-        for anime in self.dirs.keys():
-            self.anime_dict[anime] = self.session.get_files(anime)
+        self.session = SessionHandler(server_ip, server_port)
+        self.events = Events(self.session, self.master)
+        self.videos = self.get_info_from_server()
         # self.path = tkinter.StringVar()
         self._init_resources()
 
         self.photo = tkinter.PhotoImage(file="../imgs/marci.png")
         self.createWidget()
 
-    # def _init_resources(self):
-    #     dirs = {
-    #         "dir1": {
-    #             "dirName": "tessa",
-    #             "dirImage": ""
-    #         },
-    #         "dir2": {
-    #             "dirName": "karin",
-    #             "dirImage": ""
-    #         }
-    #     }
-    #
-    #     self.list_dirs(dirs)
+    def get_info_from_server(self):
+        video_dirs = self.session.get_dirs()
+
+        return self.session.get_videos(video_dirs).get("dirs")
 
     def _init_resources(self):
-        for anime, anime_files in self.anime_dict.items():
-            tkinter.Button(self.master, text=anime).pack()
-            for file, info in anime_files.items():
+        for video, video_files in self.videos.items():
+            tkinter.Button(self.master, text=video).pack()
+            for file, info in video_files.items():
                 tkinter.Label(self.master, text=file).pack()
                 tkinter.Radiobutton(self, value=file).pack()
 
     def createWidget(self):
         """创建组件"""
-        self.set_buttons(self.master, self, self.anime_path)
+        self.set_buttons(self.master, self, self.video_path)
         # self.photo = tkinter.PhotoImage(file="../imgs/marci.png")
-        label01 = tkinter.Label(self, image=self.photo)
-        label01.pack()
+        # tkinter.Label(self, image=self.photo).pack()
 
-    def set_buttons(self, root, frame, anime_path: str):
+    def set_buttons(self, root, frame, video_path: str):
         # btn01 = tkinter.Button(root)
         # btn01["text"] = "ダウンロード"
         # btn01.pack()
@@ -63,11 +49,11 @@ class Application(tkinter.Frame):
         # quit button
         tkinter.Button(frame, text="またね", command=root.destroy).pack()
 
-        # anime button
-        for _, animes, _ in os.walk(anime_path):
-            for anime in animes:
+        # video button
+        for _, videos, _ in os.walk(video_path):
+            for video in videos:
                 btn = tkinter.Button(frame)
-                btn["text"] = anime
+                btn["text"] = video
                 btn.pack()
 
         # path select button
