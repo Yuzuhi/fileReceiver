@@ -74,7 +74,7 @@ class SessionHandler:
         if not dirs or dirs["code"] == FAIL_CODE:
             raise socket.error
 
-        return dirs["dirs"].keys()
+        return list(dirs["dirs"].keys())
 
     def download_request(self):
         pass
@@ -119,6 +119,7 @@ class SessionHandler:
 
     def receive_response(self) -> Optional[dict]:
         response = self.session.recv(4)
+        print(struct.unpack('i', response))
         header_len = struct.unpack('i', response)[0]
         header_info = self.session.recv(header_len)
         header_info = json.loads(header_info.decode('utf-8'))

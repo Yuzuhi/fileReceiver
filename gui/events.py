@@ -26,3 +26,15 @@ class Events:
         if path_:
             return path_
 
+    def load_video_info(self, e):
+        """点击左侧listbox中的剧集名来在右侧显示详细的剧集信息"""
+
+
+
+
+
+
+
+
+
+

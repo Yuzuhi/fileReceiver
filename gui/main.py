@@ -1,18 +1,19 @@
 import tkinter
 from gui.app import Application
+from settings import *
 
 
 def main_loop():
-    root = tkinter.Tk()
+    windows = tkinter.Tk()
 
-    root.title("アニメダウンローダー")
-    root.geometry("500x300+100+200")
+    windows.title("アニメダウンローダー")
+    windows.geometry(f"{TOTAL_WIDTH}x{TOTAL_HEIGHT}+200+300")
 
     server_ip = "47.110.232.162"
     server_port = 8021
-    Application(server_ip, server_port, master=root)
+    Application(server_ip, server_port, master=windows)
 
-    root.mainloop()
+    windows.mainloop()
 
 
 if __name__ == '__main__':
