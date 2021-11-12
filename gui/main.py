@@ -1,6 +1,6 @@
 import tkinter
 from gui.app import Application
-from settings import *
+from gui.settings import *
 
 
 def main_loop():

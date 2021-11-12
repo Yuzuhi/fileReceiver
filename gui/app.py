@@ -1,4 +1,5 @@
 import os
+import threading
 import tkinter
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
@@ -6,6 +7,7 @@ from typing import List
 
 from settings import *
 from backend.main.handler import SessionHandler
+from backend.main.utils import get_desktop_path
 from gui.events import Events
 
 
@@ -30,8 +32,19 @@ class Application(tkinter.Frame):
         self.left_tree = tkinter.ttk.Treeview(self.master, columns="video", show="headings")
         self.left_tree.place(x=10, y=20, width=200, height=200)
 
+        # 保存位置
+        self.save_path = tkinter.StringVar()
+        self.save_path.set(get_desktop_path())
+        self.save_entry = tkinter.Entry(self.master, width=20, textvariable=self.save_path)
+        self.save_entry.place(x=100, y=230)
+        self.save_btn = tkinter.Button(self.master, text="フォルダーを選択してね", command=self.set_save_path)
+        self.save_btn.place(x=120, y=230)
+
         # 存放下载任务的列表
         self.pending_download_tasks = list()
+
+        # 用于下载的线程
+        self.download_thread = False
 
         self.configure_left_tree()
         self.createWidget()
@@ -79,8 +92,19 @@ class Application(tkinter.Frame):
         video_dirs = self.session.get_dirs()
         return self.session.get_videos(video_dirs).get("dirs")
 
+    def set_save_path(self):
+        save_path = tkinter.filedialog.askdirectory(title="フォルダーを選択してね", initialdir=get_desktop_path())
+        self.save_path.set(save_path)
+
+        print(self.save_path.get())
+
+    def _verify_save_path(self) -> bool:
+        return os.path.exists(self.save_path.get())
+
     def start_download(self):
-        # 查看当前是否有下载任务进行中
+        # 验证保存地址
+        if not self._verify_save_path():
+            self.set_save_path()
 
         # 生成所有要下载的剧集信息
 
@@ -103,20 +127,25 @@ class Application(tkinter.Frame):
             # 清除right_box的选择状态
             self.right_box.select_clear(i)
 
-        # 开启一个线程开始下载
+        self.pending_download_tasks.extend(download_request_list)
 
-        print(download_request_list)
+        if self.download_thread is False:
+            self.download_thread = threading.Thread(target=self._start_download)
+            self.download_thread.start()
+        elif not self.download_thread.is_alive():
+            self.download_thread = threading.Thread(target=self._start_download)
+            self.download_thread.start()
+        else:
+            self.pending_download_tasks.extend(download_request_list)
 
-        self._start_download(download_request_list)
+        # self._start_download(download_request_list)
 
         # dir_name = self.left_tree.ge
 
-    def _start_download(self, download_request_list: List[tuple]):
-        # 将下载列表的文件转换为请求
-        self.pending_download_tasks.extend(download_request_list)
+    def _start_download(self):
         for video_info in self.pending_download_tasks:
             video_dir, video = video_info
-            self.session.single_download(video_dir, video)
+            self.session.single_download(video_dir, video, self.save_path.get())
 
     def createWidget(self):
         """创建组件"""

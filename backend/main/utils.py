@@ -1,5 +1,6 @@
 import socket
 import json
+import winreg
 
 
 def get_host_ip():
@@ -14,6 +15,12 @@ def get_host_ip():
 def to_bytes(**kwargs) -> bytes:
     if kwargs:
         return json.dumps(kwargs).encode("utf-8")
+
+
+def get_desktop_path() -> str:
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders')
+    path = winreg.QueryValueEx(key, "Desktop")[0]
+    return path
 
 
 if __name__ == '__main__':

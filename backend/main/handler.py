@@ -9,8 +9,6 @@ from backend.main.conn import connect_server
 from backend.main.constant import FAIL_CODE, SUCCESS_CODE
 from backend.main.utils import to_bytes
 
-save_path = r"D:\work\fileReceiver\anime"
-
 
 class SessionHandler:
     get_dirs_command = 0
@@ -78,10 +76,7 @@ class SessionHandler:
 
         return list(dirs["dirs"].keys())
 
-    def download_request(self):
-        pass
-
-    def single_download(self, video_path: str, video_name: str):
+    def single_download(self, video_path: str, video_name: str, save_path: str):
 
         body_info = to_bytes(
             command="download",
@@ -103,10 +98,10 @@ class SessionHandler:
         if not video_info:
             return
 
-        self.write("test.mp4", video_info["videoSize"])
+        self.write(video_name, video_info["videoSize"], save_path)
 
-    def write(self, name: str, size: int):
-        global save_path
+    def write(self, name: str, size: int, save_path: str):
+
         download_path = os.path.join(save_path, name)
         received = 0
         with open(download_path, "wb") as f:
