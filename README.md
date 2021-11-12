@@ -173,16 +173,8 @@ get_videos 获取一个文件夹内的所有文件信息
 
 ```json
 {
-  "videoNumber": 0,
-  "videos": {
-    "video1": {
-      "name": "",
-      "size": ""
-    },
-    "video2": {
-      "name": "",
-      "size": ""
-    }
-  }
+  "command": "download",
+  "code": 200,
+  "videoSize": 0
 }
 ```

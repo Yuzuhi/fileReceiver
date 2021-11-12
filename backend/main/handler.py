@@ -9,6 +9,8 @@ from backend.main.conn import connect_server
 from backend.main.constant import FAIL_CODE, SUCCESS_CODE
 from backend.main.utils import to_bytes
 
+save_path = r"D:\work\fileReceiver\anime"
+
 
 class SessionHandler:
     get_dirs_command = 0
@@ -79,11 +81,17 @@ class SessionHandler:
     def download_request(self):
         pass
 
-    def _single_download(self, video_path: str, video_name: str):
+    def single_download(self, video_path: str, video_name: str):
 
-        body_info = to_bytes(videoPath=video_path, videoName=video_name)
+        body_info = to_bytes(
+            command="download",
+            code=self.single_download_command,
+            videoDir=video_path,
+            videoName=video_name
+        )
+
         head_info = to_bytes(
-            command="singleDownload",
+            command="download",
             code=self.single_download_command,
             msgSize=sys.getsizeof(body_info)
         )
@@ -91,25 +99,28 @@ class SessionHandler:
         self._send_head_info(head_info)
         self.session.send(body_info)
 
-        video_info = self.receive_response()
+        video_info = self.receive_video()
         if not video_info:
             return
 
-        self.write(video_info["name"], video_info["size"])
+        self.write("test.mp4", video_info["videoSize"])
 
     def write(self, name: str, size: int):
-        save_path = os.path.join(self.save_path, name)
-        with open(save_path, "wb") as f:
-            while size > 1024:
-                block = self.session.recv(1024)
-                # 接收到数据
-                if block:
-                    f.write(block)
-                    size -= 1024
+        global save_path
+        download_path = os.path.join(save_path, name)
+        received = 0
+        with open(download_path, "wb") as f:
+
+            while received < size:
+                value = size - received
+                if value > 1024:
+                    block = self.session.recv(1024)
                 else:
-                    block = self.session.recv(size)
-                    if block:
-                        f.write(block)
+                    block = self.session.recv(value)
+                f.write(block)
+                received += len(block)
+
+        print("下载完成")
 
     def _send_head_info(self, head_info: bytes):
 
@@ -130,3 +141,12 @@ class SessionHandler:
 
             if response_body["code"] == SUCCESS_CODE:
                 return response_body
+
+    def receive_video(self):
+        response = self.session.recv(4)
+        print(struct.unpack('i', response))
+        header_len = struct.unpack('i', response)[0]
+        header_info = self.session.recv(header_len)
+        header_info = json.loads(header_info.decode('utf-8'))
+
+        return header_info

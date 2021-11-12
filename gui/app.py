@@ -1,7 +1,8 @@
 import os
 import tkinter
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
+from typing import List
 
 from settings import *
 from backend.main.handler import SessionHandler
@@ -23,47 +24,102 @@ class Application(tkinter.Frame):
         # self.top_frame = tkinter.Frame(self, bg="#b3b3b6", width=200, height=200)
         # self.top_frame.pack_propagate(False)
         # self.top_frame.grid(column=0, row=0, pady=5, padx=10, sticky="n")
+        self.right_box = tkinter.Listbox(self.master, selectmode="multiple")
+        self.right_box.place(x=240, y=20, width=250, height=300)
 
+        self.left_tree = tkinter.ttk.Treeview(self.master, columns="video", show="headings")
+        self.left_tree.place(x=10, y=20, width=200, height=200)
+
+        # 存放下载任务的列表
+        self.pending_download_tasks = list()
+
+        self.configure_left_tree()
         self.createWidget()
 
-    # def load_listBox(self, e):
+    def configure_left_tree(self):
+        # 配置列标题
+        self.left_tree.heading(column="video", text="タイトル")
+        # 配置列布局
+        self.left_tree.column("video", width=190, anchor="center")
+        # 插入数据
+        for video in self.videos.keys():
+            self.left_tree.insert(parent="", index="end", values=video)
+
+        # 绑定事件
+        self.left_tree.bind("<Button-1>", self.title_click, True)
+
+    def title_click(self, event):
+        x, y, widget = event.x, event.y, event.widget
+        index = widget.identify("item", x, y)
+        item = self.left_tree.item(index)
+
+        video = item["values"]
+        if not video:
+            return
+        else:
+            video = video[0]
+
+        # delete right box info
+        size = self.right_box.size()
+        while size:
+            self.right_box.delete(0)
+            size -= 1
+
+        # show video info in right box
+        for each_episode in self.videos[video].keys():
+            if each_episode == "videoNumber":
+                continue
+            self.right_box.insert("end", each_episode)
+
+        # print(self.left_tree.identify_element(x, y))
+
+        # print(self.left_tree.)
 
     def get_info_from_server(self):
         video_dirs = self.session.get_dirs()
         return self.session.get_videos(video_dirs).get("dirs")
 
-    def load_video_info(self, e):
-        for index in self.left_box.curselection():
-            video = self.left_box.get(index)
-            # 在右侧listbox显示剧集
-            for each_episode in self.videos[video].keys():
-                if each_episode == "videoNumber":
-                    continue
-                self.right_box.insert("end", each_episode)
+    def start_download(self):
+        # 查看当前是否有下载任务进行中
+
+        # 生成所有要下载的剧集信息
+
+        selected_dir = self.left_tree.selection()
+
+        # 获取用户所选择的剧集
+        pending_download_index = list(self.right_box.curselection())
+
+        if not pending_download_index:
+            tkinter.messagebox.showinfo(title="ブブー", message="ダウンロードしたいアニメを選択してからダウンロードボタンを押すよ\n (๑´ㅂ`๑)")
+            return
+
+        selected_dir = self.left_tree.item(selected_dir).get("values")[0]
+
+        download_request_list = list()
+
+        for i in pending_download_index:
+            download_request_list.append((selected_dir, self.right_box.get(i)))
+
+            # 清除right_box的选择状态
+            self.right_box.select_clear(i)
+
+        # 开启一个线程开始下载
+
+        print(download_request_list)
+
+        self._start_download(download_request_list)
+
+        # dir_name = self.left_tree.ge
+
+    def _start_download(self, download_request_list: List[tuple]):
+        # 将下载列表的文件转换为请求
+        self.pending_download_tasks.extend(download_request_list)
+        for video_info in self.pending_download_tasks:
+            video_dir, video = video_info
+            self.session.single_download(video_dir, video)
 
     def createWidget(self):
         """创建组件"""
-        # left
-
-        # left = tkinter.Frame(self, bg="#0F61AF", width=2000, height=TOP_HEIGHT)
-        # columns = ("name", "gender", "age")
-        # tree = ttk.Treeview(left, show="headings", columns=columns, selectmode=tkinter.BROWSE)
-        # tree.column("name", anchor="center")
-
-        # tree.pack()
-
-        self.left_box = tkinter.Listbox(self.master)
-        self.left_box.place(x=10, y=20, width=200, height=200)
-        self.left_box.bind("<Button-1>", func=self.load_video_info)
-
-        # use loaded server video data to list videos.
-        for video in self.videos.keys():
-            self.left_box.insert("end", video)
-
-        # right
-
-        self.right_box = tkinter.Listbox(self.master)
-        self.right_box.place(x=230, y=20, width=250, height=300)
 
         # left.pack()
         # top
@@ -73,8 +129,11 @@ class Application(tkinter.Frame):
         # # exit button
         # # tkinter.Button(self.master, text="またね", command=self.master.destroy).grid(row=0, column=0, padx=30, sticky="NW")
         # tkinter.Button(top_frame, borderwidth=2, text="またね", command=self.master.destroy).pack(side="left", anchor="nw")
-        # # download button
-        # tkinter.Button(top_frame, borderwidth=2, text="ダウンロード").pack(side="right", anchor="ne")
+
+        # download button
+        download_btn = tkinter.Button(self.master, text="ダウンロード", command=self.start_download)
+        download_btn.place(x=10, y=230)
+
         #
         # top_frame.pack()
         #
@@ -94,34 +153,6 @@ class Application(tkinter.Frame):
         # self.photo = tkinter.PhotoImage(file="../imgs/marci.png")
         # tkinter.Label(self, image=self.photo).pack()
 
-    def set_buttons(self, root, frame, video_path: str):
-        pass
-        # btn01 = tkinter.Button(root)
-        # btn01["text"] = "ダウンロード"
-        # btn01.pack()
-        # btn01["command"] =
-
-        # quit button
-        # tkinter.Button(frame, text="またね", command=root.destroy).pack()
-
-        # video button
-        # for _, videos, _ in os.walk(video_path):
-        #     for video in videos:
-        #         btn = tkinter.Button(frame)
-        #         btn["text"] = video
-        #         btn.pack()
-
-        # path select button
-        # tkinter.Button(frame, text="アニメをセーブするフォルダーを選択してください", command=self.events.select_path).pack()
-        # print(self.events.path.get())
-
-    # def select_path(self):
-    #     path_ = askdirectory(initialdir=os.getcwd(), title="アニメをセーブするフォルダーを選択してください")
-    #     print(path_)
-    # self.path.set(path_)
-    #
-    # return self.path.get()
-
     def list_dirs(self, dirs: dict):
         for k, v in dirs.items():
             tkinter.Button(self.master, text=v["dirName"], ).pack()
@@ -131,3 +162,6 @@ class Application(tkinter.Frame):
             value = v["name"]
             tkinter.Label(self.master, text=value).pack()
             tkinter.Radiobutton(self, value=value).pack()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.session.session.close()
