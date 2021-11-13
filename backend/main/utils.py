@@ -23,6 +23,18 @@ def get_desktop_path() -> str:
     return path
 
 
+def video_size_str(size: int) -> str:
+    unit = ["KB", "MB", "GB", "TB"]
+    count = -1
+    if size < 1024:
+        return str(size) + "B"
+    else:
+        while size >= 1024:
+            size /= 1024
+            count += 1
+    return str('%.2f' % size) + unit[count]
+
+
 if __name__ == '__main__':
     a = to_bytes(haha="hehe", hehe="pupu")
     print(a)

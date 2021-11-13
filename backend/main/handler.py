@@ -3,6 +3,7 @@ import os
 import socket
 import struct
 import sys
+from tkinter.ttk import Progressbar
 from typing import Optional, List
 
 from backend.main.conn import connect_server
@@ -76,7 +77,7 @@ class SessionHandler:
 
         return list(dirs["dirs"].keys())
 
-    def single_download(self, video_path: str, video_name: str, save_path: str):
+    def single_download(self, video_path: str, video_name: str, save_path: str, progress_bar: Progressbar):
 
         body_info = to_bytes(
             command="download",
@@ -98,22 +99,28 @@ class SessionHandler:
         if not video_info:
             return
 
-        self.write(video_name, video_info["videoSize"], save_path)
+        self.write(video_name, video_info["videoSize"], save_path, progress_bar)
 
-    def write(self, name: str, size: int, save_path: str):
+    def write(self, name: str, size: int, save_path: str, progress_bar: Progressbar):
 
         download_path = os.path.join(save_path, name)
         received = 0
+        # 设置进度条
+        progress_bar["value"] = 0
+        progress_bar["maximum"] = size
+
         with open(download_path, "wb") as f:
 
             while received < size:
                 value = size - received
                 if value > 1024:
                     block = self.session.recv(1024)
+
                 else:
                     block = self.session.recv(value)
                 f.write(block)
                 received += len(block)
+                progress_bar["value"] = received
 
         print("下载完成")
 

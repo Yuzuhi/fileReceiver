@@ -5,10 +5,10 @@ from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
 from typing import List
 
-from settings import *
 from backend.main.handler import SessionHandler
 from backend.main.utils import get_desktop_path
 from gui.events import Events
+from gui.settings import settings
 
 
 class Application(tkinter.Frame):
@@ -21,27 +21,57 @@ class Application(tkinter.Frame):
         self.session = SessionHandler(server_ip, server_port)
         self.events = Events(self.session, self.master)
         self.videos = self.get_info_from_server()
-        # self.path = tkinter.StringVar()
+
         self.photo = tkinter.PhotoImage(file="../imgs/marci.png")
         # self.top_frame = tkinter.Frame(self, bg="#b3b3b6", width=200, height=200)
         # self.top_frame.pack_propagate(False)
         # self.top_frame.grid(column=0, row=0, pady=5, padx=10, sticky="n")
         self.right_box = tkinter.Listbox(self.master, selectmode="multiple")
-        self.right_box.place(x=240, y=20, width=250, height=300)
+
+        self.right_box.place(x=settings.RIGHT_BOX_X,
+                             y=settings.RIGHT_BOX_Y,
+                             width=settings.RIGHT_BOX_WIDTH,
+                             height=settings.RIGHT_BOX_HEIGHT)
 
         self.left_tree = tkinter.ttk.Treeview(self.master, columns="video", show="headings")
-        self.left_tree.place(x=10, y=20, width=200, height=200)
+        self.left_tree.place(x=settings.LEFT_TREE_X,
+                             y=settings.LEFT_TREE_Y,
+                             width=settings.LEFT_TREE_WIDTH,
+                             height=settings.LEFT_TREE_HEIGHT)
+
+        # 显示当前下载中的任务
+        self.downloading_label = tkinter.Label(self.master,
+                                               text=(settings.DOWNLOADING_LABEL_STR.format("", "")),
+                                               font=settings.PENDING_DOWNLOAD_LABEL_FONT, anchor="nw")
+
+        self.downloading_label.place(x=settings.DOWNLOADING_LABEL_X, y=settings.DOWNLOADING_LABEL_Y)
+
+        # 显示当前任务数
+        self.progress_label = tkinter.Label(self.master,
+                                            text=(settings.PENDING_DOWNLOAD_LABEL_STR.format("")),
+                                            font=settings.PENDING_DOWNLOAD_LABEL_FONT, anchor="nw")
+
+        self.progress_label.place(x=settings.PENDING_DOWNLOAD_LABEL_X, y=settings.PENDING_DOWNLOAD_LABEL_Y)
 
         # 保存位置
         self.save_path = tkinter.StringVar()
         self.save_path.set(get_desktop_path())
-        self.save_entry = tkinter.Entry(self.master, width=20, textvariable=self.save_path)
-        self.save_entry.place(x=100, y=230)
-        self.save_btn = tkinter.Button(self.master, text="フォルダーを選択してね", command=self.set_save_path)
-        self.save_btn.place(x=120, y=230)
+        self.save_entry = tkinter.Entry(self.master,
+                                        width=settings.SAVE_ENTRY_WIDTH,
+                                        textvariable=self.save_path)
+
+        self.save_entry.place(x=settings.SAVE_ENTRY_X, y=settings.SAVE_ENTRY_Y, width=settings.SAVE_ENTRY_WIDTH)
+        self.save_btn = tkinter.Button(self.master, text="保存フォルダー", command=self.set_save_path)
+        self.save_btn.place(x=settings.SAVE_BUTTON_X, y=settings.SAVE_BUTTON_Y)
 
         # 存放下载任务的列表
         self.pending_download_tasks = list()
+        # 下载的进度条
+        self.progress_bar = tkinter.ttk.Progressbar(self.master, value=0)
+        self.progress_bar.place(x=settings.PROGRESS_BAR_X,
+                                y=settings.PROGRESS_BAR_Y,
+                                width=settings.PROGRESS_BAR_WIDTH,
+                                height=settings.PROGRESS_BAR_HEIGHT)
 
         # 用于下载的线程
         self.download_thread = False
@@ -53,7 +83,7 @@ class Application(tkinter.Frame):
         # 配置列标题
         self.left_tree.heading(column="video", text="タイトル")
         # 配置列布局
-        self.left_tree.column("video", width=190, anchor="center")
+        self.left_tree.column("video", width=settings.LEFT_TREE_WIDTH - 10, anchor="center")
         # 插入数据
         for video in self.videos.keys():
             self.left_tree.insert(parent="", index="end", values=video)
@@ -93,7 +123,7 @@ class Application(tkinter.Frame):
         return self.session.get_videos(video_dirs).get("dirs")
 
     def set_save_path(self):
-        save_path = tkinter.filedialog.askdirectory(title="フォルダーを選択してね", initialdir=get_desktop_path())
+        save_path = tkinter.filedialog.askdirectory(title="保存フォルダー", initialdir=get_desktop_path())
         self.save_path.set(save_path)
 
         print(self.save_path.get())
@@ -127,6 +157,8 @@ class Application(tkinter.Frame):
             # 清除right_box的选择状态
             self.right_box.select_clear(i)
 
+        # 开启下载线程
+
         self.pending_download_tasks.extend(download_request_list)
 
         if self.download_thread is False:
@@ -135,17 +167,40 @@ class Application(tkinter.Frame):
         elif not self.download_thread.is_alive():
             self.download_thread = threading.Thread(target=self._start_download)
             self.download_thread.start()
-        else:
-            self.pending_download_tasks.extend(download_request_list)
+
+        self.progress_label.configure(
+            text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(len(self.pending_download_tasks))))
 
         # self._start_download(download_request_list)
 
         # dir_name = self.left_tree.ge
 
     def _start_download(self):
-        for video_info in self.pending_download_tasks:
-            video_dir, video = video_info
-            self.session.single_download(video_dir, video, self.save_path.get())
+
+        # show pending videos number
+        self.progress_label.configure(
+            text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(len(self.pending_download_tasks)))
+        )
+
+        while self.pending_download_tasks:
+            video_dir, video = self.pending_download_tasks.pop(0)
+            # show pending videos number
+            self.progress_label.configure(
+                text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(len(self.pending_download_tasks)))
+            )
+
+            # show downloading video title
+            self.downloading_label.configure(
+                text=(settings.DOWNLOADING_LABEL_STR.format(f"{video_dir}---{video}"))
+            )
+
+            self.session.single_download(video_dir, video, self.save_path.get(), self.progress_bar)
+            print(f"正在下载：{video_dir}/{video}")
+
+        # clear downloading video title
+        self.downloading_label.configure(
+            text=(settings.DOWNLOADING_LABEL_STR.format("", ""))
+        )
 
     def createWidget(self):
         """创建组件"""
@@ -161,7 +216,10 @@ class Application(tkinter.Frame):
 
         # download button
         download_btn = tkinter.Button(self.master, text="ダウンロード", command=self.start_download)
-        download_btn.place(x=10, y=230)
+        download_btn.place(x=settings.DOWNLOAD_BTN_X,
+                           y=settings.DOWNLOAD_BTN_Y,
+                           width=settings.DOWNLOAD_BTN_WIDTH,
+                           height=settings.DOWNLOAD_BTN_HEIGHT)
 
         #
         # top_frame.pack()

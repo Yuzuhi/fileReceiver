@@ -1,13 +1,13 @@
 import tkinter
 from gui.app import Application
-from gui.settings import *
+from gui.settings import settings
 
 
 def main_loop():
     windows = tkinter.Tk()
 
     windows.title("アニメダウンローダー")
-    windows.geometry(f"{TOTAL_WIDTH}x{TOTAL_HEIGHT}+200+300")
+    windows.geometry(f"{settings.TOTAL_WIDTH}x{settings.TOTAL_HEIGHT}+200+300")
 
     server_ip = "47.110.232.162"
     server_port = 8021
