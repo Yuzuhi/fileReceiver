@@ -3,10 +3,10 @@ import threading
 import tkinter
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
-from typing import List
 
 from backend.main.handler import SessionHandler
 from backend.main.utils import get_desktop_path
+from gui import catherine
 from gui.events import Events
 from gui.settings import settings
 
@@ -22,22 +22,24 @@ class Application(tkinter.Frame):
         self.events = Events(self.session, self.master)
         self.videos = self.get_info_from_server()
 
-        self.photo = tkinter.PhotoImage(file="../imgs/marci.png")
-        # self.top_frame = tkinter.Frame(self, bg="#b3b3b6", width=200, height=200)
-        # self.top_frame.pack_propagate(False)
-        # self.top_frame.grid(column=0, row=0, pady=5, padx=10, sticky="n")
-        self.right_box = tkinter.Listbox(self.master, selectmode="multiple")
-
-        self.right_box.place(x=settings.RIGHT_BOX_X,
-                             y=settings.RIGHT_BOX_Y,
-                             width=settings.RIGHT_BOX_WIDTH,
-                             height=settings.RIGHT_BOX_HEIGHT)
+        self.right_box = None
 
         self.left_tree = tkinter.ttk.Treeview(self.master, columns="video", show="headings")
         self.left_tree.place(x=settings.LEFT_TREE_X,
                              y=settings.LEFT_TREE_Y,
                              width=settings.LEFT_TREE_WIDTH,
                              height=settings.LEFT_TREE_HEIGHT)
+
+        # 右侧展示图片的label
+        self.right_label = tkinter.Label(self.master,
+                                         text=catherine.catherine,
+                                         font=settings.RIGHT_LABEL_FONT)
+
+        # use right_box size
+        self.right_label.place(x=settings.RIGHT_BOX_X,
+                               y=settings.RIGHT_BOX_Y,
+                               width=settings.RIGHT_BOX_WIDTH,
+                               height=settings.RIGHT_BOX_HEIGHT)
 
         # 显示当前下载中的任务
         self.downloading_label = tkinter.Label(self.master,
@@ -79,6 +81,22 @@ class Application(tkinter.Frame):
         self.configure_left_tree()
         self.createWidget()
 
+    @staticmethod
+    def load_ascii_art():
+        path = r"./catherine.txt"
+        with open(path, "r") as f:
+            data = f.read()
+
+        return data
+
+    def create_right_box(self):
+        self.right_box = tkinter.Listbox(self.master, selectmode="multiple")
+
+        self.right_box.place(x=settings.RIGHT_BOX_X,
+                             y=settings.RIGHT_BOX_Y,
+                             width=settings.RIGHT_BOX_WIDTH,
+                             height=settings.RIGHT_BOX_HEIGHT)
+
     def configure_left_tree(self):
         # 配置列标题
         self.left_tree.heading(column="video", text="タイトル")
@@ -92,6 +110,10 @@ class Application(tkinter.Frame):
         self.left_tree.bind("<Button-1>", self.title_click, True)
 
     def title_click(self, event):
+
+        if not self.right_box:
+            self.create_right_box()
+
         x, y, widget = event.x, event.y, event.widget
         index = widget.identify("item", x, y)
         item = self.left_tree.item(index)

@@ -1,20 +1,20 @@
-# This is a sample Python script.
+import tkinter
+from gui.app import Application
+from gui.settings import settings
 
-# Press Alt+Shift+X to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
+def main_loop():
+    windows = tkinter.Tk()
+    windows.title("アニメダウンローダー")
+    windows.geometry(f"{settings.TOTAL_WIDTH}x{settings.TOTAL_HEIGHT}+200+300")
+    windows.iconbitmap("imgs/catherine.ico")
+    windows.resizable(0, 0)
+    server_ip = settings.ip
+    server_port = settings.port
+    Application(server_ip, server_port, master=windows)
 
-# Press the green button in the gutter to run the script.
-import os
+    windows.mainloop()
 
-from backend.main.handler import SessionHandler
 
 if __name__ == '__main__':
-    ip = "127.0.0.1"
-    # ip = "47.110.232.162"
-    port = 8021
-    downloader = SessionHandler(ip, port)
-    # path = os.path.abspath(".")
-    # path = os.path.join(path, "video/file.mp4")
-    # downloader.write(path)
-    downloader.test()
+    main_loop()

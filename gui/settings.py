@@ -1,4 +1,8 @@
 class Settings:
+    # project
+    Version = "0.1.0"
+    ip = "47.110.232.162"
+    port = 8021
     # total size
     TOTAL_WIDTH: int = 700
     TOTAL_HEIGHT: int = 425
@@ -7,6 +11,8 @@ class Settings:
     LEFT_TREE_WIDTH = 230
     LEFT_TREE_X = 10
     LEFT_TREE_Y = 30
+    # right_label
+    RIGHT_LABEL_FONT: tuple = ("Arial", 2)
     # right box size
     RIGHT_BOX_HEIGHT = 300
     RIGHT_BOX_WIDTH = 430
