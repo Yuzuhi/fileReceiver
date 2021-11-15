@@ -5,10 +5,11 @@ from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
 
 from backend.main.handler import SessionHandler
-from backend.main.utils import get_desktop_path
-from gui import catherine
+from backend.main.utils import get_desktop_path, get_resource_path
 from gui.events import Events
 from gui.settings import settings
+
+RIGHT_LABEL_PATH = get_resource_path(os.path.join(settings.resources, settings.right_label_path))
 
 
 class Application(tkinter.Frame):
@@ -32,7 +33,7 @@ class Application(tkinter.Frame):
 
         # 右侧展示图片的label
         self.right_label = tkinter.Label(self.master,
-                                         text=catherine.catherine,
+                                         text=self.load_ascii_art(RIGHT_LABEL_PATH),
                                          font=settings.RIGHT_LABEL_FONT)
 
         # use right_box size
@@ -82,8 +83,7 @@ class Application(tkinter.Frame):
         self.createWidget()
 
     @staticmethod
-    def load_ascii_art():
-        path = r"./catherine.txt"
+    def load_ascii_art(path:str):
         with open(path, "r") as f:
             data = f.read()
 

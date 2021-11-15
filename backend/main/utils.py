@@ -1,5 +1,7 @@
+import os
 import socket
 import json
+import sys
 import winreg
 
 
@@ -35,7 +37,12 @@ def video_size_str(size: int) -> str:
     return str('%.2f' % size) + unit[count]
 
 
-
+def get_resource_path(relative_path: str):
+    if getattr(sys, "frozen", False):
+        base_path = sys._MEIPASS  # 获取临时资源
+    else:
+        base_path = os.path.abspath(".")  # 获取当前路径
+    return os.path.join(base_path, relative_path)  # 绝对路径
 
 
 if __name__ == '__main__':

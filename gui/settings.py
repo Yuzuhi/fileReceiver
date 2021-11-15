@@ -1,8 +1,12 @@
 class Settings:
     # project
     Version = "0.1.0"
-    ip = "47.110.232.162"
+    ip = "101.228.159.55"
     port = 8021
+    # path
+    resources = "resources"
+    icon_path = "catherine.ico"
+    right_label_path = "catherine.txt"
     # total size
     TOTAL_WIDTH: int = 700
     TOTAL_HEIGHT: int = 425
