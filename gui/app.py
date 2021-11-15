@@ -4,8 +4,9 @@ import tkinter
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
 
+from backend.main.exceptions import ReconnectSuccessException
 from backend.main.handler import SessionHandler
-from backend.main.utils import get_desktop_path, get_resource_path
+from backend.main.utils import get_desktop_path, get_resource_path, load_ascii_art
 from gui.events import Events
 from gui.settings import settings
 
@@ -13,27 +14,38 @@ RIGHT_LABEL_PATH = get_resource_path(os.path.join(settings.resources, settings.r
 
 
 class Application(tkinter.Frame):
-    video_path = "../video"
 
     def __init__(self, server_ip: str, server_port: int, master: tkinter.Tk = None):
         super().__init__(master)
         self.master = master
         self.pack()
-        self.session = SessionHandler(server_ip, server_port)
-        self.events = Events(self.session, self.master)
+        self.session = SessionHandler(server_ip, server_port, True)
+
         self.videos = self.get_info_from_server()
 
-        self.right_box = None
+        # 存放下载任务的列表
+        self.pending_download_tasks = list()
 
+        # 用于下载的线程
+        self.download_thread = False
+        self.__create_widget()
+
+    def __create_widget(self):
+        """创建组件"""
+
+        self.right_box = None
+        # left tree
         self.left_tree = tkinter.ttk.Treeview(self.master, columns="video", show="headings")
         self.left_tree.place(x=settings.LEFT_TREE_X,
                              y=settings.LEFT_TREE_Y,
                              width=settings.LEFT_TREE_WIDTH,
                              height=settings.LEFT_TREE_HEIGHT)
 
+        self.__configure_left_tree()
+
         # 右侧展示图片的label
         self.right_label = tkinter.Label(self.master,
-                                         text=self.load_ascii_art(RIGHT_LABEL_PATH),
+                                         text=load_ascii_art(RIGHT_LABEL_PATH),
                                          font=settings.RIGHT_LABEL_FONT)
 
         # use right_box size
@@ -56,6 +68,13 @@ class Application(tkinter.Frame):
 
         self.progress_label.place(x=settings.PENDING_DOWNLOAD_LABEL_X, y=settings.PENDING_DOWNLOAD_LABEL_Y)
 
+        # 下载的进度条
+        self.progress_bar = tkinter.ttk.Progressbar(self.master, value=0)
+        self.progress_bar.place(x=settings.PROGRESS_BAR_X,
+                                y=settings.PROGRESS_BAR_Y,
+                                width=settings.PROGRESS_BAR_WIDTH,
+                                height=settings.PROGRESS_BAR_HEIGHT)
+
         # 保存位置
         self.save_path = tkinter.StringVar()
         self.save_path.set(get_desktop_path())
@@ -64,40 +83,17 @@ class Application(tkinter.Frame):
                                         textvariable=self.save_path)
 
         self.save_entry.place(x=settings.SAVE_ENTRY_X, y=settings.SAVE_ENTRY_Y, width=settings.SAVE_ENTRY_WIDTH)
-        self.save_btn = tkinter.Button(self.master, text="保存フォルダー", command=self.set_save_path)
+        self.save_btn = tkinter.Button(self.master, text="保存フォルダー", command=self._set_save_path)
         self.save_btn.place(x=settings.SAVE_BUTTON_X, y=settings.SAVE_BUTTON_Y)
 
-        # 存放下载任务的列表
-        self.pending_download_tasks = list()
-        # 下载的进度条
-        self.progress_bar = tkinter.ttk.Progressbar(self.master, value=0)
-        self.progress_bar.place(x=settings.PROGRESS_BAR_X,
-                                y=settings.PROGRESS_BAR_Y,
-                                width=settings.PROGRESS_BAR_WIDTH,
-                                height=settings.PROGRESS_BAR_HEIGHT)
+        # download button
+        download_btn = tkinter.Button(self.master, text="ダウンロード", command=self.start_download)
+        download_btn.place(x=settings.DOWNLOAD_BTN_X,
+                           y=settings.DOWNLOAD_BTN_Y,
+                           width=settings.DOWNLOAD_BTN_WIDTH,
+                           height=settings.DOWNLOAD_BTN_HEIGHT)
 
-        # 用于下载的线程
-        self.download_thread = False
-
-        self.configure_left_tree()
-        self.createWidget()
-
-    @staticmethod
-    def load_ascii_art(path:str):
-        with open(path, "r") as f:
-            data = f.read()
-
-        return data
-
-    def create_right_box(self):
-        self.right_box = tkinter.Listbox(self.master, selectmode="multiple")
-
-        self.right_box.place(x=settings.RIGHT_BOX_X,
-                             y=settings.RIGHT_BOX_Y,
-                             width=settings.RIGHT_BOX_WIDTH,
-                             height=settings.RIGHT_BOX_HEIGHT)
-
-    def configure_left_tree(self):
+    def __configure_left_tree(self):
         # 配置列标题
         self.left_tree.heading(column="video", text="タイトル")
         # 配置列布局
@@ -107,12 +103,34 @@ class Application(tkinter.Frame):
             self.left_tree.insert(parent="", index="end", values=video)
 
         # 绑定事件
-        self.left_tree.bind("<Button-1>", self.title_click, True)
+        self.left_tree.bind("<Button-1>", self._title_click, True)
 
-    def title_click(self, event):
+    def _create_right_box(self):
+        self.right_box = tkinter.Listbox(self.master, selectmode="multiple")
+
+        self.right_box.place(x=settings.RIGHT_BOX_X,
+                             y=settings.RIGHT_BOX_Y,
+                             width=settings.RIGHT_BOX_WIDTH,
+                             height=settings.RIGHT_BOX_HEIGHT)
+
+    def get_info_from_server(self):
+        try:
+            video_dirs = self.session.get_dirs()
+            return self.session.get_videos(video_dirs).get("dirs")
+        except ReconnectSuccessException:
+            # 发生错误但是重连成功
+            self.get_info_from_server()
+
+    # ----------------------------------------- Events ----------------------------------------------------------------
+
+    def _set_save_path(self):
+        save_path = tkinter.filedialog.askdirectory(title="保存フォルダー", initialdir=get_desktop_path())
+        self.save_path.set(save_path)
+
+    def _title_click(self, event):
 
         if not self.right_box:
-            self.create_right_box()
+            self._create_right_box()
 
         x, y, widget = event.x, event.y, event.widget
         index = widget.identify("item", x, y)
@@ -136,27 +154,10 @@ class Application(tkinter.Frame):
                 continue
             self.right_box.insert("end", each_episode)
 
-        # print(self.left_tree.identify_element(x, y))
-
-        # print(self.left_tree.)
-
-    def get_info_from_server(self):
-        video_dirs = self.session.get_dirs()
-        return self.session.get_videos(video_dirs).get("dirs")
-
-    def set_save_path(self):
-        save_path = tkinter.filedialog.askdirectory(title="保存フォルダー", initialdir=get_desktop_path())
-        self.save_path.set(save_path)
-
-        print(self.save_path.get())
-
-    def _verify_save_path(self) -> bool:
-        return os.path.exists(self.save_path.get())
-
     def start_download(self):
         # 验证保存地址
         if not self._verify_save_path():
-            self.set_save_path()
+            self._set_save_path()
 
         # 生成所有要下载的剧集信息
 
@@ -193,9 +194,8 @@ class Application(tkinter.Frame):
         self.progress_label.configure(
             text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(len(self.pending_download_tasks))))
 
-        # self._start_download(download_request_list)
-
-        # dir_name = self.left_tree.ge
+    def _verify_save_path(self) -> bool:
+        return os.path.exists(self.save_path.get())
 
     def _start_download(self):
 
@@ -216,61 +216,12 @@ class Application(tkinter.Frame):
                 text=(settings.DOWNLOADING_LABEL_STR.format(f"{video_dir}---{video}"))
             )
 
-            self.session.single_download(video_dir, video, self.save_path.get(), self.progress_bar)
-            print(f"正在下载：{video_dir}/{video}")
+            self.session.start_download(video_dir, video, self.save_path.get(), self.progress_bar)
 
         # clear downloading video title
         self.downloading_label.configure(
             text=(settings.DOWNLOADING_LABEL_STR.format("", ""))
         )
-
-    def createWidget(self):
-        """创建组件"""
-
-        # left.pack()
-        # top
-        # top_frame = tkinter.Frame(self, bg="#0F61AF", width=2000, height=TOP_HEIGHT)
-        # top_frame.pack_propagate(False)
-        #
-        # # exit button
-        # # tkinter.Button(self.master, text="またね", command=self.master.destroy).grid(row=0, column=0, padx=30, sticky="NW")
-        # tkinter.Button(top_frame, borderwidth=2, text="またね", command=self.master.destroy).pack(side="left", anchor="nw")
-
-        # download button
-        download_btn = tkinter.Button(self.master, text="ダウンロード", command=self.start_download)
-        download_btn.place(x=settings.DOWNLOAD_BTN_X,
-                           y=settings.DOWNLOAD_BTN_Y,
-                           width=settings.DOWNLOAD_BTN_WIDTH,
-                           height=settings.DOWNLOAD_BTN_HEIGHT)
-
-        #
-        # top_frame.pack()
-        #
-        # # mid
-        #
-        # mid_frame = tkinter.Frame(self, width=2000, height=200)
-        # # mid = tkinter.Frame(mid_frame, width=2000, height=200).pack()
-        # tkinter.Button(mid_frame, text="111", width=100, borderwidth=2).grid(row=0)
-        #
-        # mid_frame.pack()
-
-        # for file, info in video_files.items():
-        #     tkinter.Label(self.master, text=file).pack()
-        #     tkinter.Radiobutton(self, value=file).pack()
-
-        # self.set_buttons(self.master, self, self.video_path)
-        # self.photo = tkinter.PhotoImage(file="../imgs/marci.png")
-        # tkinter.Label(self, image=self.photo).pack()
-
-    def list_dirs(self, dirs: dict):
-        for k, v in dirs.items():
-            tkinter.Button(self.master, text=v["dirName"], ).pack()
-
-    def list_files(self, files: dict):
-        for _, v in files.items():
-            value = v["name"]
-            tkinter.Label(self.master, text=value).pack()
-            tkinter.Radiobutton(self, value=value).pack()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.session.session.close()

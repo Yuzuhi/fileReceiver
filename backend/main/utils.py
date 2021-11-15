@@ -37,6 +37,12 @@ def video_size_str(size: int) -> str:
     return str('%.2f' % size) + unit[count]
 
 
+def load_ascii_art(path: str):
+    with open(path, "r") as f:
+        data = f.read()
+    return data
+
+
 def get_resource_path(relative_path: str):
     if getattr(sys, "frozen", False):
         base_path = sys._MEIPASS  # 获取临时资源

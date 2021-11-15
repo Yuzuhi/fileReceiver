@@ -1,7 +1,8 @@
 class Settings:
     # project
     Version = "0.1.0"
-    ip = "101.228.159.55"
+    # ip = "101.228.159.55"
+    ip: str = "47.110.232.162"
     port = 8021
     # path
     resources = "resources"
@@ -55,7 +56,6 @@ class Settings:
     PENDING_DOWNLOAD_LABEL_Y = 345
     PENDING_DOWNLOAD_LABEL_FONT = ("Arial", 7)
     PENDING_DOWNLOAD_LABEL_STR: str = "残りダウンロード数：{}"
-
 
 
 settings = Settings()
