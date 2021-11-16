@@ -153,7 +153,8 @@ get_videos 获取一个文件夹内的所有文件信息
   "command": "download",
   "code": 2,
   "videoDir": "",
-  "videoName": ""
+  "videoName": "",
+  "received": 0
 }
 ```
 
