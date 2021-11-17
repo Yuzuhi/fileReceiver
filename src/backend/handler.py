@@ -8,8 +8,31 @@ from tkinter.ttk import Progressbar
 from typing import Optional, List
 
 from src.backend.constant import FAIL_CODE, SUCCESS_CODE
-from src.backend.exceptions import DisconnectionException, ReconnectSuccessException
+from src.backend.exceptions import DisconnectionException
 from src.backend.utils.utils import to_bytes
+
+
+def reconnect(func):
+    """自动重连模块"""
+
+    def wrapper(self, *args, **kwargs):
+        """
+        :param self: SessionHandler
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        try:
+            return func(self, *args, **kwargs)
+        except socket.error as e:
+            if not self.auto_reconnect:
+                raise e
+            else:
+                self._reconnect()
+                return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class SessionHandler:
@@ -27,16 +50,30 @@ class SessionHandler:
             self.session.connect((self.server_ip, self.server_port))
         except socket.error as e:
             if self.auto_reconnect:
-                self.re_connect()
+                self._reconnect()
             else:
                 raise e
 
-    @staticmethod
-    def get_hostname():
-        hostname = socket.gethostname()
-        sys_info = socket.gethostbyname_ex(hostname)
-        return sys_info[2]
+    def _reconnect(self) -> bool:
+        server = '{} {}'.format(self.server_ip, self.server_port)
+        while True:
+            try:
+                self.session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.session = self.session.connect((self.server_ip, self.server_port))
+                # 睡眠以防止持续请求
+                time.sleep(2.0)
+            except ConnectionRefusedError:
+                print('Connection to server {} failed!'.format(server))
+            except TimeoutError:
+                print('Connection to server {} timed out!'.format(server))
+            except DisconnectionException:
+                print(DisconnectionException())
+            except socket.error as e:
+                print('Connection to server {} failed! deal to {}'.format(server, e))
+            else:
+                return True
 
+    @reconnect
     def get_videos(self, video_dirs: List[str]) -> Optional[dict]:
         """
         发送获取文件列表的请求
@@ -66,6 +103,7 @@ class SessionHandler:
 
         return videos
 
+    @reconnect
     def get_dirs(self) -> List[str]:
 
         body_info = to_bytes(command="getDirs",
@@ -86,6 +124,7 @@ class SessionHandler:
 
         return list(dirs["dirs"].keys())
 
+    @reconnect
     def start_download(self, video_path: str, video_name: str, save_path: str, progress_bar: Progressbar):
 
         download_path = os.path.join(save_path, video_name)
@@ -104,60 +143,23 @@ class SessionHandler:
             received=received
         )
 
-        head_info = to_bytes(
+        header_info = to_bytes(
             command="download",
             code=self.download_command,
             msgSize=sys.getsizeof(body_info)
         )
 
-        self._send_header_info(head_info)
+        self._send_header_info(header_info)
         self.session.send(body_info)
 
         video_info = self._receive_header_info()
-        if not video_info:
-            return
+        self._write(download_path, video_info["videoSize"], progress_bar, received)
 
-        try:
-            self._write(download_path, video_info["videoSize"], progress_bar, received)
-        except DisconnectionException:
-            self.re_connect()
-            self.start_download(video_path, video_name, save_path, progress_bar)
+    def _send_header_info(self, header_info: bytes):
 
-    def _write(self, download_path: str, size: int, progress_bar: Progressbar, received: int = 0):
-
-        # 设置进度条
-        progress_bar["value"] = received
-        progress_bar["maximum"] = size
-
-        with open(download_path, "ab") as f:
-
-            f.seek(received)
-
-            while received < size:
-                value = size - received
-                if value > 1024:
-                    block = self.session.recv(1024)
-                    # 断开连接,收到0长度的数据
-                    if len(block) == 0:
-                        self.session.close()
-                        raise DisconnectionException
-                else:
-                    block = self.session.recv(value)
-                    if len(block) == 0:
-                        self.session.close()
-                        raise DisconnectionException
-
-                f.write(block)
-                received += len(block)
-                progress_bar["value"] = received
-
-        print("下载完成")
-
-    def _send_header_info(self, head_info: bytes):
-
-        head_info_len = struct.pack("i", len(head_info))
-        self.session.send(head_info_len)
-        self.session.send(head_info)
+        header_info_len = struct.pack("i", len(header_info))
+        self.session.send(header_info_len)
+        self.session.send(header_info)
 
     def _receive_response(self) -> Optional[dict]:
         """
@@ -176,12 +178,7 @@ class SessionHandler:
             received += len(response_body)
 
         if not response_body:
-            if self.auto_reconnect:
-                self.re_connect()
-                # 告知调用本次函数的程序重连成功
-                raise ReconnectSuccessException
-            else:
-                raise DisconnectionException
+            raise DisconnectionException
 
         response_body = json.loads(response_body.decode("utf-8"))
 
@@ -189,48 +186,44 @@ class SessionHandler:
             return response_body
 
     def _receive_header_info(self) -> dict:
+        """接收server发来的头部信息"""
         response = self.session.recv(4)
         if not response:
-            if self.auto_reconnect:
-                self.re_connect()
-                # 告知调用本次函数的程序重连成功
-                raise ReconnectSuccessException
-            else:
-                raise DisconnectionException
+            raise DisconnectionException
 
         header_len = struct.unpack('i', response)[0]
         header_info = self.session.recv(header_len)
         if not header_info:
-            if self.auto_reconnect:
-                self.re_connect()
-                # 告知调用本次函数的程序重连成功
-                raise ReconnectSuccessException
-            else:
-                raise DisconnectionException
+            raise DisconnectionException
 
         header_info = json.loads(header_info.decode('utf-8'))
 
         return header_info
 
-    def re_connect(self):
-        """自动重连模块"""
-        server = '{} {}'.format(self.server_ip, self.server_port)
-        while True:
-            print('Connecting to server {} ...'.format(server))
-            try:
-                self.session = self.__connect()
-            except ConnectionRefusedError:
-                print('Connection to server {} failed!'.format(server))
-            except TimeoutError:
-                print('Connection to server {} timed out!'.format(server))
-            except socket.error as e:
-                print('Connection to server {} failed! deal to {}'.format(server, e))
-            else:
-                return
+    def _write(self, download_path: str, size: int, progress_bar: Progressbar, received: int = 0):
 
-            time.sleep(2.0)
+        # 设置进度条
+        progress_bar["value"] = received
+        progress_bar["maximum"] = size
 
-    def __connect(self):
-        session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        session.connect((self.server_ip, self.server_port))
-        return session
+        with open(download_path, "ab") as f:
+
+            f.seek(received)
+
+            while received < size:
+                value = size - received
+                if value > 1024:
+                    block = self.session.recv(1024)
+                    # 断开连接,收到0长度的数据
+                    if len(block) == 0:
+                        raise DisconnectionException
+                else:
+                    block = self.session.recv(value)
+                    if len(block) == 0:
+                        raise DisconnectionException
+
+                f.write(block)
+                received += len(block)
+                progress_bar["value"] = received
+
+        print("下载完成")

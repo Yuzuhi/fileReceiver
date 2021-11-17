@@ -52,7 +52,7 @@ class Settings:
     DOWNLOADING_LABEL_X = 260
     DOWNLOADING_LABEL_Y = 330
     DOWNLOADING_LABEL_FONT: tuple = ("Arial", 7)
-    DOWNLOADING_LABEL_STR: str = "ダウンロード中：{}"
+    DOWNLOADING_LABEL_STR: str = "ダウンロード中{}：{}"
     # progress label
     PENDING_DOWNLOAD_LABEL_X = 260
     PENDING_DOWNLOAD_LABEL_Y = 345

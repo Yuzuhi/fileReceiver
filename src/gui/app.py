@@ -3,8 +3,6 @@ import threading
 import tkinter
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
-
-from src.backend.exceptions import ReconnectSuccessException
 from src.backend.handler import SessionHandler
 from src.backend.utils.utils import get_resource_path, load_ascii_art, get_desktop_path
 from src.settings import settings
@@ -19,14 +17,15 @@ class Application(tkinter.Frame):
         self.master = master
         self.pack()
         self.session = SessionHandler(server_ip, server_port, True)
-
-        self.videos = self.get_info_from_server()
+        # 加载服务器资源
+        self.videos = self.session.get_videos(self.session.get_dirs()).get("dirs")
 
         # 存放下载任务的列表
         self.pending_download_tasks = list()
 
         # 用于下载的线程
         self.download_thread = False
+        # 创建组件
         self.__create_widget()
 
     def __create_widget(self):
@@ -53,7 +52,7 @@ class Application(tkinter.Frame):
                                width=settings.RIGHT_BOX_WIDTH,
                                height=settings.RIGHT_BOX_HEIGHT)
 
-        # 显示当前下载中的任务
+        # 显示当前下载中的任务与进度
         self.downloading_label = tkinter.Label(self.master,
                                                text=(settings.DOWNLOADING_LABEL_STR.format("", "")),
                                                font=settings.PENDING_DOWNLOAD_LABEL_FONT, anchor="nw")
@@ -111,14 +110,6 @@ class Application(tkinter.Frame):
                              y=settings.RIGHT_BOX_Y,
                              width=settings.RIGHT_BOX_WIDTH,
                              height=settings.RIGHT_BOX_HEIGHT)
-
-    def get_info_from_server(self):
-        try:
-            video_dirs = self.session.get_dirs()
-            return self.session.get_videos(video_dirs).get("dirs")
-        except ReconnectSuccessException:
-            # 发生错误但是重连成功
-            self.get_info_from_server()
 
     # ----------------------------------------- Events ----------------------------------------------------------------
 
@@ -212,7 +203,7 @@ class Application(tkinter.Frame):
 
             # show downloading video title
             self.downloading_label.configure(
-                text=(settings.DOWNLOADING_LABEL_STR.format(f"{video_dir}---{video}"))
+                text=(settings.DOWNLOADING_LABEL_STR.format("00.00%", f"{video_dir}---{video}"))
             )
 
             self.session.start_download(video_dir, video, self.save_path.get(), self.progress_bar)
