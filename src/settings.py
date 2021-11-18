@@ -1,63 +1,79 @@
 import os
+import sys
+
+RootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def get_root_path():
+    return sys._MEIPASS if getattr(sys, "frozen", False) else RootPath
 
 
 class Settings:
-    # project
-    Debug = True
-    RootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # auzure
-    # path
-    resources = "resources"
-    icon_path = "catherine.ico"
-    right_label_path = "catherine.txt"
-    # total size
-    TOTAL_WIDTH: int = 700
-    TOTAL_HEIGHT: int = 425
-    # left tree size
-    LEFT_TREE_HEIGHT = 200
-    LEFT_TREE_WIDTH = 230
-    LEFT_TREE_X = 10
-    LEFT_TREE_Y = 30
-    # right_label
-    RIGHT_LABEL_FONT: tuple = ("Arial", 2)
-    # right box size
-    RIGHT_BOX_HEIGHT = 300
-    RIGHT_BOX_WIDTH = 430
-    RIGHT_BOX_X = 260
-    RIGHT_BOX_Y = 30
-    # save entry size
-    SAVE_ENTRY_X = 10
-    SAVE_ENTRY_Y = 235
-    SAVE_ENTRY_WIDTH = 200
-    SAVE_ENTRY_HEIGHT = 10
-    # save button
-    SAVE_BUTTON_X = 10
-    SAVE_BUTTON_Y = 260
-    SAVE_BUTTON_WIDTH = 30
-    SAVE_BUTTON_HEIGHT = 30
-    # progress bar
-    PROGRESS_BAR_WIDTH = 250
-    PROGRESS_BAR_HEIGHT = 30
-    PROGRESS_BAR_X = 260
-    PROGRESS_BAR_Y = 365
-    # download button
-    DOWNLOAD_BTN_X = 590
-    DOWNLOAD_BTN_Y = 365
-    DOWNLOAD_BTN_WIDTH = 100
-    DOWNLOAD_BTN_HEIGHT = 30
-    # surprise label
-    SURPRISE_LABEL_X = 10
-    SURPRISE_LABEL_Y = 5
-    # downloading label
-    DOWNLOADING_LABEL_X = 260
-    DOWNLOADING_LABEL_Y = 330
-    DOWNLOADING_LABEL_FONT: tuple = ("Arial", 7)
-    DOWNLOADING_LABEL_STR: str = "ダウンロード中{}：{}"
-    # progress label
-    PENDING_DOWNLOAD_LABEL_X = 260
-    PENDING_DOWNLOAD_LABEL_Y = 345
-    PENDING_DOWNLOAD_LABEL_FONT = ("Arial", 7)
-    PENDING_DOWNLOAD_LABEL_STR: str = "残りダウンロード数：{}"
+
+    def __init__(self):
+        # project
+        self.Debug = True
+        # path
+        self.RESOURCES_PATH = os.path.join(get_root_path(), "resources")
+        self.ICON_PATH = "catherine.ico"
+        self.RIGHT_LABEL_PATH = "catherine.txt"
+        self.GIF_PATH = "loading{}"
+        # total size
+
+        self.TOTAL_WIDTH: int = 700
+        self.TOTAL_HEIGHT: int = 425
+        # welcome canvas
+        self.WELCOME_MAX_HEIGHT = 425
+        self.WELCOME_MAX_WIDTH = 600
+        # left tree size
+        self.LEFT_TREE_HEIGHT = 200
+        self.LEFT_TREE_WIDTH = 230
+        self.LEFT_TREE_X = 10
+        self.LEFT_TREE_Y = 30
+        # right_label
+        self.RIGHT_LABEL_FONT: tuple = ("Arial", 2)
+        # right box size
+        self.RIGHT_BOX_HEIGHT = 300
+        self.RIGHT_BOX_WIDTH = 430
+        self.RIGHT_BOX_X = 260
+        self.RIGHT_BOX_Y = 30
+        # save entry size
+        self.SAVE_ENTRY_X = 10
+        self.SAVE_ENTRY_Y = 235
+        self.SAVE_ENTRY_WIDTH = 200
+        self.SAVE_ENTRY_HEIGHT = 10
+        # save button
+        self.SAVE_BUTTON_X = 10
+        self.SAVE_BUTTON_Y = 260
+        self.SAVE_BUTTON_WIDTH = 30
+        self.SAVE_BUTTON_HEIGHT = 30
+        # progress bar
+        self.PROGRESS_BAR_WIDTH = 250
+        self.PROGRESS_BAR_HEIGHT = 30
+        self.PROGRESS_BAR_X = 260
+        self.PROGRESS_BAR_Y = 365
+        # download button
+        self.DOWNLOAD_BTN_X = 590
+        self.DOWNLOAD_BTN_Y = 365
+        self.DOWNLOAD_BTN_WIDTH = 100
+        self.DOWNLOAD_BTN_HEIGHT = 30
+        # surprise label
+        self.SURPRISE_LABEL_X = 10
+        self.SURPRISE_LABEL_Y = 5
+        # downloading label
+        self.DOWNLOADING_LABEL_X = 260
+        self.DOWNLOADING_LABEL_Y = 330
+        self.DOWNLOADING_LABEL_FONT: tuple = ("Arial", 7)
+        self.DOWNLOADING_LABEL_STR: str = "ダウンロード中{}：{}"
+        # progress label
+        self.PENDING_DOWNLOAD_LABEL_X = 260
+        self.PENDING_DOWNLOAD_LABEL_Y = 345
+        self.PENDING_DOWNLOAD_LABEL_FONT = ("Arial", 7)
+        self.PENDING_DOWNLOAD_LABEL_STR: str = "残りダウンロード数：{}"
+
+    @property
+    def GIF_NUMBER(self) -> int:
+        return len([file for file in os.listdir(self.RESOURCES_PATH) if file.split(".")[-1] == "gif"])
 
 
 settings = Settings()

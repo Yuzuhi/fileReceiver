@@ -3,7 +3,7 @@ import re
 from typing import List, Dict
 
 # ini配置文件解析器
-from src.settings import settings
+from src.settings import settings, RootPath
 
 
 class IniParser:
@@ -69,7 +69,7 @@ class IniParser:
 
 
 if settings.Debug:
-    ini_file_path = os.path.join(settings.RootPath, "config.ini")
+    ini_file_path = os.path.join(RootPath, "config.ini")
 else:
     ini_file = os.getcwd()
     ini_file_path = os.path.join(ini_file, "config.ini")

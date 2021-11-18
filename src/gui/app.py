@@ -1,37 +1,79 @@
 import os
+import random
 import threading
+import time
 import tkinter
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
-from src.backend.handler import SessionHandler
-from src.backend.utils.utils import get_resource_path, load_ascii_art, get_desktop_path
-from src.settings import settings
+from typing import Callable
 
-RIGHT_LABEL_PATH = get_resource_path(os.path.join(settings.resources, settings.right_label_path))
+from PIL import Image, ImageSequence, ImageTk
+
+from src.backend.handler import SessionHandler
+from src.backend.utils.utils import load_ascii_art, get_desktop_path
+from src.settings import settings, get_root_path
 
 
 class Application(tkinter.Frame):
 
     def __init__(self, server_ip: str, server_port: int, master: tkinter.Tk = None):
         super().__init__(master)
+        self.server_ip = server_ip
+        self.server_port = server_port
         self.master = master
         self.pack()
-        self.session = SessionHandler(server_ip, server_port, True)
-        # 加载服务器资源
-        self.videos = self.session.get_videos(self.session.get_dirs()).get("dirs")
-
         # 存放下载任务的列表
         self.pending_download_tasks = list()
-
         # 用于下载的线程
         self.download_thread = False
-        # 创建组件
+        # 开启一个线程去异步加载服务器资源
+        self.load_server_thread = threading.Thread(target=self.__load_from_server)
+        self.load_server_thread.start()
+        # 欢迎界面，服务器加载资源完成后摧毁此界面
+        self.welcome_thread_stopped = False
+        self.__welcome__()
+        self.welcome_label.destroy()
+        # 创建其它组件
         self.__create_widget()
+
+    def __welcome__(self):
+        """创建欢迎界面，等待从服务器获取资源"""
+        self.welcome_label = tkinter.Label(self.master, width=300, height=300)
+        self.welcome_label.place(x=0, y=0)
+        # 随机启用一个gif
+        gifs = [gif for gif in os.listdir(settings.RESOURCES_PATH) if gif.endswith(".gif")]
+        gif_path = os.path.join(settings.RESOURCES_PATH, random.choice(gifs))
+        self._show_gif(gif_path)
+
+    def _show_gif(self, gif_path: str):
+        if not os.path.exists(gif_path):
+            return
+        img = Image.open(gif_path)
+        width, height = img.size
+
+        while True:
+            # gif图片流的迭代器
+            frames = ImageSequence.Iterator(img)
+            for frame in frames:
+                pic = ImageTk.PhotoImage(frame)
+                self.welcome_label.configure(
+                    width=max(width, settings.WELCOME_MAX_WIDTH),
+                    height=max(height, settings.WELCOME_MAX_HEIGHT)
+                    , image=pic)
+                time.sleep(0.05)
+                if self.welcome_thread_stopped:
+                    break
+            if self.welcome_thread_stopped:
+                break
+
+    def __load_from_server(self):
+        self.session = SessionHandler(self.server_ip, self.server_port, True)
+        self.videos = self.session.get_videos(self.session.get_dirs()).get("dirs")
+        # 异步加载完成后发送信号让主线程继续进行
+        self.welcome_thread_stopped = True
 
     def __create_widget(self):
         """创建组件"""
-
-        self.right_box = None
         # left tree
         self.left_tree = tkinter.ttk.Treeview(self.master, columns="video", show="headings")
         self.left_tree.place(x=settings.LEFT_TREE_X,
@@ -41,9 +83,11 @@ class Application(tkinter.Frame):
 
         self.__configure_left_tree()
 
+        self.right_box = None
+
         # 右侧展示图片的label
         self.right_label = tkinter.Label(self.master,
-                                         text=load_ascii_art(RIGHT_LABEL_PATH),
+                                         text=load_ascii_art(settings.RIGHT_LABEL_PATH),
                                          font=settings.RIGHT_LABEL_FONT)
 
         # use right_box size
@@ -118,7 +162,6 @@ class Application(tkinter.Frame):
         self.save_path.set(save_path)
 
     def _title_click(self, event):
-
         if not self.right_box:
             self._create_right_box()
 
@@ -188,7 +231,6 @@ class Application(tkinter.Frame):
         return os.path.exists(self.save_path.get())
 
     def _start_download(self):
-
         # show pending videos number
         self.progress_label.configure(
             text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(len(self.pending_download_tasks)))
@@ -212,6 +254,10 @@ class Application(tkinter.Frame):
         self.downloading_label.configure(
             text=(settings.DOWNLOADING_LABEL_STR.format("", ""))
         )
+
+    def on_closing(self):
+        self.welcome_thread_stopped = True
+        self.master.destroy()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.session.session.close()

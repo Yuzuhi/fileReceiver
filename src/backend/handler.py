@@ -73,6 +73,7 @@ class SessionHandler:
             else:
                 return True
 
+
     @reconnect
     def get_videos(self, video_dirs: List[str]) -> Optional[dict]:
         """

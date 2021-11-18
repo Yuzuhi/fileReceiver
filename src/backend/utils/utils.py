@@ -45,9 +45,3 @@ def load_ascii_art(path: str):
     return data
 
 
-def get_resource_path(relative_path: str):
-    if getattr(sys, "frozen", False):
-        base_path = sys._MEIPASS  # 获取临时资源
-    else:
-        base_path = settings.RootPath  # 项目路径
-    return os.path.join(base_path, relative_path)  # 绝对路径
