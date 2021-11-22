@@ -23,9 +23,14 @@ def reconnect(func):
         """
         if self.close_flag:
             raise DisconnectionException
-
         try:
             return func(self, *args, **kwargs)
+        except socket.timeout as e:
+            if not self.auto_reconnect:
+                raise e
+            else:
+                self._reconnect()
+                return func(self, *args, **kwargs)
         except socket.error as e:
             if not self.auto_reconnect:
                 raise e
@@ -49,7 +54,9 @@ class SessionHandler:
 
         try:
             self.session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # self.session.setblocking(False)
             self.session.connect((self.server_ip, self.server_port))
+
         except socket.error as e:
             if self.auto_reconnect:
                 self._reconnect()
@@ -59,14 +66,15 @@ class SessionHandler:
     def _reconnect(self) -> bool:
         server = '{} {}'.format(self.server_ip, self.server_port)
         while True:
+            # 睡眠以防止持续请求
+            time.sleep(2.0)
             try:
                 if self.close_flag:
                     return False
-
                 self.session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.session = self.session.connect((self.server_ip, self.server_port))
-                # 睡眠以防止持续请求
-                time.sleep(2.0)
+
+                self.session.connect((self.server_ip, self.server_port))
+
             except ConnectionRefusedError:
                 print('Connection to server {} failed!'.format(server))
             except TimeoutError:
@@ -215,6 +223,9 @@ class SessionHandler:
         downloading_info["value"] = received
         downloading_info["maximum"] = size
 
+        # 设置session超时时间，防止服务器断开链接后客户端阻塞
+        self.session.settimeout(10)
+
         with open(download_path, "ab") as f:
 
             f.seek(received)
@@ -237,4 +248,6 @@ class SessionHandler:
                 received += len(block)
                 downloading_info["value"] = received
 
+        # 取消session超时时间
+        self.session.settimeout(None)
         print("下载完成")
