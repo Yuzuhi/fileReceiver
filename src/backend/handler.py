@@ -4,7 +4,6 @@ import socket
 import struct
 import sys
 import time
-from tkinter.ttk import Progressbar
 from typing import Optional, List
 
 from src.backend.constant import FAIL_CODE, SUCCESS_CODE
@@ -22,6 +21,8 @@ def reconnect(func):
         :param kwargs:
         :return:
         """
+        if self.close_flag:
+            raise DisconnectionException
 
         try:
             return func(self, *args, **kwargs)
@@ -44,6 +45,7 @@ class SessionHandler:
         self.server_ip = server_ip
         self.server_port = server_port
         self.auto_reconnect = auto_reconnect
+        self.close_flag = False
 
         try:
             self.session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -58,6 +60,9 @@ class SessionHandler:
         server = '{} {}'.format(self.server_ip, self.server_port)
         while True:
             try:
+                if self.close_flag:
+                    return False
+
                 self.session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.session = self.session.connect((self.server_ip, self.server_port))
                 # 睡眠以防止持续请求
@@ -72,7 +77,6 @@ class SessionHandler:
                 print('Connection to server {} failed! deal to {}'.format(server, e))
             else:
                 return True
-
 
     @reconnect
     def get_videos(self, video_dirs: List[str]) -> Optional[dict]:
@@ -126,7 +130,7 @@ class SessionHandler:
         return list(dirs["dirs"].keys())
 
     @reconnect
-    def start_download(self, video_path: str, video_name: str, save_path: str, progress_bar: Progressbar):
+    def start_download(self, video_path: str, video_name: str, save_path: str, downloading_info: dict):
 
         download_path = os.path.join(save_path, video_name)
 
@@ -154,7 +158,10 @@ class SessionHandler:
         self.session.send(body_info)
 
         video_info = self._receive_header_info()
-        self._write(download_path, video_info["videoSize"], progress_bar, received)
+        # 更新下载信息
+        downloading_info["video_dir"] = video_path
+        downloading_info["video"] = video_name
+        self._write(download_path, video_info["videoSize"], downloading_info, received)
 
     def _send_header_info(self, header_info: bytes):
 
@@ -188,6 +195,7 @@ class SessionHandler:
 
     def _receive_header_info(self) -> dict:
         """接收server发来的头部信息"""
+
         response = self.session.recv(4)
         if not response:
             raise DisconnectionException
@@ -201,17 +209,19 @@ class SessionHandler:
 
         return header_info
 
-    def _write(self, download_path: str, size: int, progress_bar: Progressbar, received: int = 0):
+    def _write(self, download_path: str, size: int, downloading_info: dict, received: int = 0):
 
         # 设置进度条
-        progress_bar["value"] = received
-        progress_bar["maximum"] = size
+        downloading_info["value"] = received
+        downloading_info["maximum"] = size
 
         with open(download_path, "ab") as f:
 
             f.seek(received)
 
             while received < size:
+                if self.close_flag:
+                    return
                 value = size - received
                 if value > 1024:
                     block = self.session.recv(1024)
@@ -225,6 +235,6 @@ class SessionHandler:
 
                 f.write(block)
                 received += len(block)
-                progress_bar["value"] = received
+                downloading_info["value"] = received
 
         print("下载完成")

@@ -19,12 +19,16 @@ class Settings:
         self.RIGHT_LABEL_PATH = "catherine.txt"
         self.GIF_PATH = "loading{}"
         # total size
-
         self.TOTAL_WIDTH: int = 700
         self.TOTAL_HEIGHT: int = 425
-        # welcome canvas
+        # welcome label
         self.WELCOME_MAX_HEIGHT = 425
         self.WELCOME_MAX_WIDTH = 600
+        # welcome gif label
+        self.WELCOME_GIF_LABEL_HEIGHT = 300
+        self.WELCOME_GIF_LABEL_WIDTH = 300
+        # welcome char label
+        self.WELCOME_CHAR_LABEL_TEXT = "ローディング中..."
         # left tree size
         self.LEFT_TREE_HEIGHT = 200
         self.LEFT_TREE_WIDTH = 230
@@ -64,7 +68,7 @@ class Settings:
         self.DOWNLOADING_LABEL_X = 260
         self.DOWNLOADING_LABEL_Y = 330
         self.DOWNLOADING_LABEL_FONT: tuple = ("Arial", 7)
-        self.DOWNLOADING_LABEL_STR: str = "ダウンロード中{}：{}"
+        self.DOWNLOADING_LABEL_STR: str = "ダウンロード中 {}：{}"
         # progress label
         self.PENDING_DOWNLOAD_LABEL_X = 260
         self.PENDING_DOWNLOAD_LABEL_Y = 345
