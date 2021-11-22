@@ -27,10 +27,11 @@ class Application(tkinter.Frame):
         self.pending_download_tasks = list()
         # 存放当前下载中的进度信息
         self.downloading_info: dict = {
-            "value": 0,
-            "maximum": 0,
-            "video_dir": "",
-            "video": ""
+            "value": 0,  # 下载进度条value
+            "maximum": 0,  # 下载进度条最大值
+            "video_dir": "",  # 下载中的video所属的文件夹
+            "video": "",  # 下载中的video
+            "tasks": 0  # 当前剩余的待下载任务数
         }
         # 用于下载的线程
         self.download_thread = False
@@ -278,50 +279,53 @@ class Application(tkinter.Frame):
             self.download_thread = threading.Thread(target=self._start_download)
             self.download_thread.start()
 
-        self.progress_label.configure(
-            text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(len(self.pending_download_tasks))))
+        # 将当前任务数添加到待更新的 self.downloading_info 这一列表中
+
+        self.downloading_info["tasks"] = len(self.pending_download_tasks)
 
     def _verify_save_path(self) -> bool:
         return os.path.exists(self.save_path.get())
 
     def _start_download(self):
         # show pending videos number
-        self.progress_label.configure(
-            text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(len(self.pending_download_tasks)))
-        )
+        self.downloading_info["tasks"] = len(self.pending_download_tasks)
 
         while self.pending_download_tasks:
             video_dir, video = self.pending_download_tasks.pop(0)
             # show pending videos number
-            self.progress_label.configure(
-                text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(len(self.pending_download_tasks)))
-            )
+            self.downloading_info["tasks"] = len(self.pending_download_tasks)
 
             # show downloading video title
-            self.downloading_label.configure(
-                text=(settings.DOWNLOADING_LABEL_STR.format("00.00%", f"{video_dir}---{video}"))
-            )
+            self.downloading_info["video_dir"] = video_dir
+            self.downloading_info["video"] = video
 
             self.session.start_download(video_dir, video, self.save_path.get(), self.downloading_info)
 
         # clear downloading video title
-        self.downloading_label.configure(
-            text=(settings.DOWNLOADING_LABEL_STR.format("", ""))
-        )
+        self.downloading_info["value"] = -1
 
     def _update_downloading_info(self):
 
         if self.downloading_info["maximum"] == 0:
             return
 
-        self.progress_bar["value"] = self.downloading_info["value"]
-        self.progress_bar["maximum"] = self.downloading_info["maximum"]
-        percentage = float("%.2f" % (self.downloading_info["value"] * 100 / self.downloading_info["maximum"]))
-        temp_text = self.downloading_info['video_dir'] + "--" + self.downloading_info['video']
+        # 进度条更新
 
-        self.downloading_label.configure(
-            text=(settings.DOWNLOADING_LABEL_STR.format(str(percentage) + "%", temp_text))
-        )
+        # 当前没有下载任务
+        if self.downloading_info["value"] == -1:
+            self.downloading_label.configure(text=settings.DOWNLOADING_LABEL_STR.format("", ""))
+        else:
+            self.progress_bar["value"] = self.downloading_info["value"]
+            self.progress_bar["maximum"] = self.downloading_info["maximum"]
+            percentage = float("%.2f" % (self.downloading_info["value"] * 100 / self.downloading_info["maximum"]))
+            temp_text = self.downloading_info['video_dir'] + "--" + self.downloading_info['video']
+            self.downloading_label.configure(
+                text=settings.DOWNLOADING_LABEL_STR.format(str(percentage) + "%", temp_text)
+            )
+
+        # 剩余任务数更新
+        self.progress_label.configure(
+            text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(self.downloading_info["tasks"])))
 
     def on_closing(self):
         self.session.close_flag = True
