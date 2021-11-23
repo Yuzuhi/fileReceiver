@@ -26,16 +26,20 @@ def reconnect(func):
         try:
             return func(self, *args, **kwargs)
         except socket.timeout as e:
+            self.disconnect = True
             if not self.auto_reconnect:
                 raise e
             else:
                 self._reconnect()
+                self.disconnect = False
                 return func(self, *args, **kwargs)
         except socket.error as e:
+            self.disconnect = True
             if not self.auto_reconnect:
                 raise e
             else:
                 self._reconnect()
+                self.disconnect = False
                 return func(self, *args, **kwargs)
 
     return wrapper
@@ -51,11 +55,14 @@ class SessionHandler:
         self.server_port = server_port
         self.auto_reconnect = auto_reconnect
         self.close_flag = False
+        # 表示当前链接是否断开的标志
+        self.disconnect = True
 
         try:
             self.session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # self.session.setblocking(False)
             self.session.connect((self.server_ip, self.server_port))
+            self.disconnect = False
 
         except socket.error as e:
             if self.auto_reconnect:

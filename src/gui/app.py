@@ -33,6 +33,8 @@ class Application(tkinter.Frame):
             "video": "",  # 下载中的video
             "tasks": 0  # 当前剩余的待下载任务数
         }
+        # 重连gui是否被创建的flag
+        self.reconnection_hint_been_created = False
         # 用于下载的线程
         self.download_thread = False
         # 用于定时函数的事件列表
@@ -58,13 +60,15 @@ class Application(tkinter.Frame):
     def __welcome__(self):
         """创建欢迎界面，等待从服务器获取资源"""
         # 随机启用一个gif
-        gifs = [gif for gif in os.listdir(settings.RESOURCES_PATH) if gif.endswith(".gif")]
+        gifs = [gif for gif in os.listdir(settings.RESOURCES_PATH) if
+                gif.endswith(".gif") and gif.startswith("loading")]
+
         gif_path = os.path.join(settings.RESOURCES_PATH, random.choice(gifs))
         if not os.path.exists(gif_path):
             return
         # 创建生成器
         frame_generator = self.gen_frame(gif_path)
-        self._submit(self._show_gif, frame_generator)
+        self._submit(self._show_welcome_label_gif, frame_generator)
 
     def _event_loop(self):
         """
@@ -74,8 +78,16 @@ class Application(tkinter.Frame):
         然后停止下一次定时任务并加载其它组件
         """
         self.master.after(100, self._event_loop)
-        # 更新下载进度条
+
         if self.welcome_frame_been_destroyed:
+            # 查看当前是否断线，如果断线则播放reconnecting
+            if self.session.disconnect:
+                self.art_label.destroy()
+                if not self.reconnection_hint_been_created:
+                    self._create_reconnect_label()
+                    self.reconnection_hint_been_created = True
+                pass
+            # 更新下载进度条
             self._update_downloading_info()
 
         # 结束欢迎画面
@@ -92,7 +104,14 @@ class Application(tkinter.Frame):
     def _submit(self, func, *args):
         self.events.append((func, *args))
 
-    def _show_gif(self, frame_generator: Generator):
+    def _show_welcome_label_gif(self, frame_generator: Generator):
+        width, height, pic = next(frame_generator)
+        self.welcome_gif_label.configure(
+            width=min(width, settings.WELCOME_MAX_WIDTH),
+            height=min(height, settings.WELCOME_MAX_HEIGHT)
+            , image=pic)
+
+    def _show_reconnecting_label_gif(self, frame_generator: Generator):
         width, height, pic = next(frame_generator)
         self.welcome_gif_label.configure(
             width=min(width, settings.WELCOME_MAX_WIDTH),
@@ -119,6 +138,18 @@ class Application(tkinter.Frame):
                     min(height, settings.WELCOME_MAX_HEIGHT),
                     pic
                 )
+
+    def _create_reconnect_label(self):
+        self.reconnect_text_label = tkinter.Label(self.master, text=settings.RECONNECT_TEXT_LABEL_TEXT)
+        self.reconnect_text_label.place(x=settings.RECONNECT_TEXT_LABEL_X, y=settings.RECONNECT_TEXT_LABEL_Y)
+        self.reconnect_gif_label = tkinter.Label(self.master)
+        self.reconnect_gif_label.place(x=settings.RECONNECT_GIF_LABEL_X, y=settings.RECONNECT_GIF_LABEL_Y)
+        # 创建生成器
+        gif_path = os.path.join(settings.RESOURCES_PATH, settings.ART_LABEL_PATH)
+
+    def _show_reconnect_gif(self):
+
+        frame_generator = self.gen_frame(gif_path)
 
     def __load_from_server(self):
         self.session = SessionHandler(self.server_ip, self.server_port)
@@ -150,6 +181,14 @@ class Application(tkinter.Frame):
                                y=settings.RIGHT_BOX_Y,
                                width=settings.RIGHT_BOX_WIDTH,
                                height=settings.RIGHT_BOX_HEIGHT)
+
+        # 右下角art
+        self.art_label = tkinter.Label(self.master,
+                                       text=load_ascii_art(
+                                           os.path.join(settings.RESOURCES_PATH, settings.ART_LABEL_PATH)
+                                       ))
+
+        self.art_label.place(x=settings.ART_LABEL_X, y=settings.ART_LABEL_Y)
 
         # 显示当前下载中的任务与进度
         self.downloading_label = tkinter.Label(self.master,
