@@ -38,15 +38,16 @@ class Settings:
         self.ART_LABEL_PATH = "art.txt"
         # self.ART_LABEL_HEIGHT
         # self.ART_LABEL_WIDTH
-        self.ART_LABEL_X = 10
-        self.ART_LABEL_Y = 260
+        self.ART_LABEL_X = 40
+        self.ART_LABEL_Y = 300
         # reconnect text label
-        self.RECONNECT_TEXT_LABEL_X = 10
-        self.RECONNECT_TEXT_LABEL_Y = 290
-        self.RECONNECT_TEXT_LABEL_TEXT = "只今接続が切れた∑(O_O；)\nでも大丈夫よかりんちゃん、再接続しています"
+        self.RECONNECT_TEXT_LABEL_X = 20
+        self.RECONNECT_TEXT_LABEL_Y = 300
+        self.RECONNECT_TEXT_LABEL_TEXT = "只今接続が切れた∑(O_O；)\nでも大丈夫よかりんちゃん、\n再接続していますよ"
         # reconnect gif label
-        self.RECONNECT_GIF_LABEL_X = 10
-        self.RECONNECT_GIF_LABEL_Y = 300
+        self.RECONNECT_GIF_LABEL_X = 80
+        self.RECONNECT_GIF_LABEL_Y = 370
+        self.RECONNECT_GIF_LABEL_PATH = "reconnecting.gif"
         # right_label
         self.RIGHT_LABEL_FONT: tuple = ("Arial", 2)
         # right box size
@@ -60,8 +61,8 @@ class Settings:
         self.SAVE_ENTRY_WIDTH = 200
         self.SAVE_ENTRY_HEIGHT = 10
         # save button
-        self.SAVE_BUTTON_X = 10
-        self.SAVE_BUTTON_Y = 260
+        self.SAVE_BUTTON_X = 115
+        self.SAVE_BUTTON_Y = 270
         self.SAVE_BUTTON_WIDTH = 30
         self.SAVE_BUTTON_HEIGHT = 30
         # progress bar

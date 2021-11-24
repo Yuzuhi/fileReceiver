@@ -79,9 +79,7 @@ class SessionHandler:
                 if self.close_flag:
                     return False
                 self.session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
                 self.session.connect((self.server_ip, self.server_port))
-
             except ConnectionRefusedError:
                 print('Connection to server {} failed!'.format(server))
             except TimeoutError:
@@ -91,6 +89,7 @@ class SessionHandler:
             except socket.error as e:
                 print('Connection to server {} failed! deal to {}'.format(server, e))
             else:
+                self.disconnect = False
                 return True
 
     @reconnect
