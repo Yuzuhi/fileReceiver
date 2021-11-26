@@ -148,7 +148,7 @@ class Application(tkinter.Frame):
 
     def _set_save_path(self):
         save_path = tkinter.filedialog.askdirectory(title="保存フォルダー", initialdir=get_desktop_path())
-        self.save_path.set(save_path)
+        self.save_path.set(save_path.replace("/", "\\"))
 
     def _verify_save_path(self) -> bool:
         return os.path.exists(self.save_path.get())

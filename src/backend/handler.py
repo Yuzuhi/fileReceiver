@@ -128,14 +128,17 @@ class SessionHandler:
         body_info = to_bytes(command="getDirs",
                              code=self.get_dirs_command)
 
-        head_info = to_bytes(
+        header_info = to_bytes(
             command="getDirs",
             code=self.get_dirs_command,
             msgSize=sys.getsizeof(body_info)
         )
 
-        self._send_header_info(head_info)
+        self._send_header_info(header_info)
+
+        print(f"send body message,msg:{body_info}")
         self.session.send(body_info)
+        print(f"body_info {body_info} has been sent")
 
         dirs = self._receive_response()
         if not dirs or dirs["code"] == FAIL_CODE:
@@ -180,8 +183,11 @@ class SessionHandler:
     def _send_header_info(self, header_info: bytes):
 
         header_info_len = struct.pack("i", len(header_info))
+        print(f"send header message length,length:{header_info_len}")
         self.session.send(header_info_len)
+        print(f"send header message,message:{header_info}")
         self.session.send(header_info)
+        print(f"header_info {header_info} has been sent")
 
     def _receive_response(self) -> Optional[dict]:
         """
