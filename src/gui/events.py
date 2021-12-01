@@ -7,6 +7,8 @@ from PIL import Image, ImageSequence, ImageTk
 from concurrent.futures import ThreadPoolExecutor
 
 from src.backend.handler import SessionHandler
+from src.backend.utils.parser import Config
+from src.backend.utils.utils import has_new_patch
 from src.settings import settings
 
 executor = ThreadPoolExecutor(max_workers=5)
@@ -178,6 +180,17 @@ class Events:
 
         self.downloading_info["tasks"] = len(self.pending_download_tasks)
 
+    def check_update(self):
+        """检查更新"""
+        now_version = Config.get("project").get("version")
+        # todo
+        new_version = self.session.get_new_patch_version()
+        # 如果没有找到新版本的config.ini或是其它原因，就会返回空值
+        if new_version == "":
+            return False
+
+        return has_new_patch(new_version, now_version)
+
     # ------------------------------------------- downloading -------------------------------------------------------
 
     def add_downloading_update(self,
@@ -231,3 +244,11 @@ class Events:
         # 剩余任务数更新
         progress_label.configure(
             text=(settings.PENDING_DOWNLOAD_LABEL_STR.format(self.downloading_info["tasks"])))
+
+    # ------------------------------------------- updating -------------------------------------------------------
+
+    def _update(self):
+        """更新软件"""
+        pass
+
+

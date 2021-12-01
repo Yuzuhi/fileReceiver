@@ -49,6 +49,7 @@ class SessionHandler:
     get_dirs_command = 0
     get_videos_command = 1
     download_command = 2
+    get_new_version = 3
 
     def __init__(self, server_ip: str, server_port: int, auto_reconnect: bool = True):
         self.server_ip = server_ip
@@ -180,6 +181,25 @@ class SessionHandler:
         downloading_info["video"] = video_name
         self._write(download_path, video_info["videoSize"], downloading_info, received)
 
+    @reconnect
+    def get_new_patch_version(self):
+
+        body_info = to_bytes(
+            command="version",
+            code=self.get_new_version,
+        )
+
+        header_info = to_bytes(
+            command="version",
+            code=self.get_new_version,
+            msgSize=sys.getsizeof(body_info)
+        )
+
+        self._send_header_info(header_info)
+        self.session.send(body_info)
+
+        return self._receive_response().get("version")
+
     def _send_header_info(self, header_info: bytes):
 
         header_info_len = struct.pack("i", len(header_info))
@@ -238,6 +258,8 @@ class SessionHandler:
         # 设置session超时时间，防止服务器断开链接后客户端阻塞
         self.session.settimeout(10)
 
+        t1 = time.time()
+
         with open(download_path, "ab") as f:
 
             f.seek(received)
@@ -246,8 +268,8 @@ class SessionHandler:
                 if self.close_flag:
                     return
                 value = size - received
-                if value > 1024:
-                    block = self.session.recv(1024)
+                if value > 4096:
+                    block = self.session.recv(4096)
                     # 断开连接,收到0长度的数据
                     if len(block) == 0:
                         raise DisconnectionException
@@ -260,6 +282,10 @@ class SessionHandler:
                 received += len(block)
                 downloading_info["value"] = received
 
+        t2 = time.time()
+
+        print(f"費やした時間：{t2 - t1}秒")
+
         # 取消session超时时间
         self.session.settimeout(None)
-        print("下载完成")
+        print("ダウンロード完成")

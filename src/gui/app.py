@@ -54,6 +54,8 @@ class Application(tkinter.Frame):
 
     def __create_widget(self):
         """创建组件"""
+        # 初始化right_box
+        self.right_box = None
         # left tree
         self.left_tree = tkinter.ttk.Treeview(self, columns="video", show="headings")
         self.left_tree.place(x=settings.LEFT_TREE_X,
@@ -124,6 +126,26 @@ class Application(tkinter.Frame):
                                 width=settings.DOWNLOAD_BTN_WIDTH,
                                 height=settings.DOWNLOAD_BTN_HEIGHT)
 
+        # 添加全选按钮
+        self.select_all_btn = tkinter.Button(self, text=settings.SELECT_ALL_BTN_TEXT, command=self.select_btn_click)
+        self.select_all_btn.place(
+            x=settings.SELECT_ALL_BTN_X,
+            y=settings.SELECT_ALL_BTN_Y,
+            width=settings.SELECT_ALL_BTN_WIDTH,
+            height=settings.SELECT_ALL_BTN_HEIGHT
+        )
+
+        # 添加反选按钮
+        self.invert_select_btn = tkinter.Button(self,
+                                                text=settings.INVERT_SELECTION_BTN_TEXT,
+                                                command=self.invert_btn_click)
+        self.invert_select_btn.place(
+            x=settings.INVERT_SELECTION_BTN_X,
+            y=settings.INVERT_SELECTION_BTN_Y,
+            width=settings.INVERT_SELECTION_BTN_WIDTH,
+            height=settings.INVERT_SELECTION_BTN_HEIGHT
+        )
+
     def __configure_left_tree(self):
         # 配置列标题
         self.left_tree.heading(column="video", text="タイトル")
@@ -179,6 +201,31 @@ class Application(tkinter.Frame):
                 continue
             self.right_box.insert("end", each_episode)
 
+    # ------------------------------------------- button click -------------------------------------------------------
+
+    def select_btn_click(self):
+        """绑定right_box的点击事件"""
+        if not self.right_box:
+            return
+        # 获取所有元素
+        items_number = self.right_box.size()
+
+        if items_number == 0:
+            return
+
+        self.right_box.selection_set(0, items_number)
+
+    def invert_btn_click(self):
+        if not self.right_box:
+            return
+        # 获取所有元素
+        items_number = self.right_box.size()
+        for i in range(items_number):
+            if self.right_box.select_includes(i):
+                self.right_box.selection_clear(i)
+            else:
+                self.right_box.selection_set(i)
+
     def start_download(self):
         # 验证保存地址
         if not self._verify_save_path():
@@ -208,6 +255,8 @@ class Application(tkinter.Frame):
         # 开启下载线程
 
         self.events.start_download(download_request_list, self.save_path.get())
+
+    # ------------------------------------------- application close ----------------------------------------------------
 
     def on_closing(self):
         self.events.session.close_flag = True

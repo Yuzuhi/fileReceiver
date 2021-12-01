@@ -4,8 +4,6 @@ import json
 import sys
 import winreg
 
-from src.settings import settings
-
 
 def get_host_ip():
     extra_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,3 +43,10 @@ def load_ascii_art(path: str):
     return data
 
 
+def has_new_patch(new: str, now: str) -> bool:
+    new = new.split(".")
+    now = now.split(".")
+    for i in range(len(now)):
+        if int(new[i]) > int(now[i]):
+            return True
+    return False

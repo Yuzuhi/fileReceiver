@@ -179,3 +179,52 @@ get_videos 获取一个文件夹内的所有文件信息
   "videoSize": 0
 }
 ```
+
+#### 检查更新
+
+get_new_patch_version 从./anime/NewPatch/config.ini文件中获取新版本的版本号
+
+#### Request
+
+
+- head
+
+```json
+{
+  "command": "version",
+  "code": 3,
+  "msgSize": 0
+}
+```
+
+- body
+
+```json
+{
+  "command": "version",
+  "code": 3,
+}
+```
+
+#### Response
+
+
+- head
+
+```json
+{
+  "command": "version",
+  "code": 200,
+  "msgSize": 0
+}
+```
+
+- body
+
+```json
+{
+  "command": "version",
+  "code": 200,
+  "version": ""
+}
+```

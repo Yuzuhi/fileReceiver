@@ -1,5 +1,8 @@
 import os
 import sys
+from typing import List
+
+from src.backend.utils.utils import get_desktop_path
 
 RootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -13,11 +16,14 @@ class Settings:
     def __init__(self):
         # project
         self.Debug = True
+        self.VIDEO_FORMAT: List[str] = ["mp4", "mkv", "rmvb", "flv"]
+        self.INCOMPLETE_SUFFIX = ".yuzuhi"
         # path
         self.RESOURCES_PATH = os.path.join(get_root_path(), "resources")
         self.ICON_PATH = "catherine.ico"
         self.RIGHT_LABEL_PATH = "catherine.txt"
         self.GIF_PATH = "loading{}"
+        self.NEW_PATCH_DIR = os.path.join(get_desktop_path(), "NewPatch")
         # total size
         self.TOTAL_WIDTH: int = 700
         self.TOTAL_HEIGHT: int = 425
@@ -88,6 +94,18 @@ class Settings:
         self.PENDING_DOWNLOAD_LABEL_Y = 345
         self.PENDING_DOWNLOAD_LABEL_FONT = ("Arial", 7)
         self.PENDING_DOWNLOAD_LABEL_STR: str = "残りダウンロード数：{}"
+        # select all button
+        self.SELECT_ALL_BTN_TEXT = "すべて選択"
+        self.SELECT_ALL_BTN_X = 260
+        self.SELECT_ALL_BTN_Y = 8
+        self.SELECT_ALL_BTN_WIDTH = 100
+        self.SELECT_ALL_BTN_HEIGHT = 20
+        # invert selection button
+        self.INVERT_SELECTION_BTN_TEXT = "反転選択"
+        self.INVERT_SELECTION_BTN_X = 370
+        self.INVERT_SELECTION_BTN_Y = 8
+        self.INVERT_SELECTION_BTN_WIDTH = 100
+        self.INVERT_SELECTION_BTN_HEIGHT = 20
 
     @property
     def GIF_NUMBER(self) -> int:
