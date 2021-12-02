@@ -1,13 +1,8 @@
-import os
-import random
-import threading
-import time
 import tkinter
+from pathlib import Path
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
-from typing import Generator, Tuple, List
-from PIL import Image, ImageSequence, ImageTk
-from src.backend.handler import SessionHandler
+
 from src.backend.utils.utils import load_ascii_art, get_desktop_path
 from src.gui.events import Events, executor
 from src.settings import settings
@@ -50,7 +45,7 @@ class Application(tkinter.Frame):
     def _callback(self, future):
         self.videos = future.result()
         self.__configure_left_tree()
-        self.__configure_right_box()
+
 
     def __create_widget(self):
         """创建组件"""
@@ -66,7 +61,8 @@ class Application(tkinter.Frame):
         # 右侧展示图片的label
         self.right_label = tkinter.Label(self,
                                          text=load_ascii_art(
-                                             os.path.join(settings.RESOURCES_PATH, settings.RIGHT_LABEL_PATH)),
+                                             settings.Home.joinpath(settings.RESOURCES_PATH,
+                                                                    settings.RIGHT_LABEL_PATH)),
                                          font=settings.RIGHT_LABEL_FONT)
 
         # use right_box size
@@ -78,7 +74,7 @@ class Application(tkinter.Frame):
         # 左下角art
         self.art_label = tkinter.Label(self,
                                        text=load_ascii_art(
-                                           os.path.join(settings.RESOURCES_PATH, settings.ART_LABEL_PATH)
+                                           settings.RESOURCES_PATH.joinpath(settings.ART_LABEL_PATH)
                                        ))
 
         self.art_label.place(x=settings.ART_LABEL_X, y=settings.ART_LABEL_Y)
@@ -173,7 +169,10 @@ class Application(tkinter.Frame):
         self.save_path.set(save_path.replace("/", "\\"))
 
     def _verify_save_path(self) -> bool:
-        return os.path.exists(self.save_path.get())
+        if not self.save_path.get():
+            return False
+
+        return Path(self.save_path.get()).is_dir()
 
     def _title_click(self, event):
         if not self.right_box:

@@ -1,4 +1,3 @@
-import os
 import random
 import tkinter
 from tkinter import ttk
@@ -79,9 +78,8 @@ class Events:
         gifs = [gif for gif in os.listdir(settings.RESOURCES_PATH) if
                 gif.endswith(".gif") and gif.startswith("loading")]
 
-        gif_path = os.path.join(settings.RESOURCES_PATH, random.choice(gifs))
-        if not os.path.exists(gif_path):
-            return
+        gif_path = settings.RESOURCES_PATH.joinpath(random.choice(gifs))
+
 
         # 创建生成器
         frame_generator = self._gen_frame(gif_path)
@@ -114,7 +112,7 @@ class Events:
                                   connecting_label: tkinter.Label
                                   ):
         """开启app的掉线检测，掉线时播放掉线gif"""
-        gif_path = os.path.join(settings.RESOURCES_PATH, settings.RECONNECT_GIF_LABEL_PATH)
+        gif_path = settings.RESOURCES_PATH.joinpath(settings.RECONNECT_GIF_LABEL_PATH)
         frame_generator = self._gen_frame(gif_path)
 
         self._submit(self._display_reconnecting_label_gif,
@@ -229,12 +227,14 @@ class Events:
 
         # 进度条更新
 
-        # 当前没有下载任务
+        # 当前没有下载任务 显示任务完成
         if self.downloading_info["value"] == -1:
-            downloading_label.configure(text=settings.DOWNLOADING_LABEL_STR.format("", ""))
+            downloading_label.configure(text=settings.DOWNLOADING_LABEL_COMPLETE_STR)
+
         else:
             progress_bar["value"] = self.downloading_info["value"]
             progress_bar["maximum"] = self.downloading_info["maximum"]
+
             percentage = float("%.2f" % (self.downloading_info["value"] * 100 / self.downloading_info["maximum"]))
             temp_text = self.downloading_info['video_dir'] + "--" + self.downloading_info['video']
             downloading_label.configure(
@@ -250,5 +250,3 @@ class Events:
     def _update(self):
         """更新软件"""
         pass
-
-

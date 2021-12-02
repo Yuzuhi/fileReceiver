@@ -1,14 +1,15 @@
 import json
-import os
 import socket
 import struct
-import sys
+
 import time
+from pathlib import Path
 from typing import Optional, List
 
 from src.backend.constant import FAIL_CODE, SUCCESS_CODE
 from src.backend.exceptions import DisconnectionException
 from src.backend.utils.utils import to_bytes
+from src.settings import settings
 
 
 def reconnect(func):
@@ -110,7 +111,7 @@ class SessionHandler:
         head_info = to_bytes(
             command="getVideos",
             code=self.get_videos_command,
-            msgSize=sys.getsizeof(body_info)
+            msgSize=len(body_info)
         )
 
         self._send_header_info(head_info)
@@ -132,7 +133,7 @@ class SessionHandler:
         header_info = to_bytes(
             command="getDirs",
             code=self.get_dirs_command,
-            msgSize=sys.getsizeof(body_info)
+            msgSize=len(body_info)
         )
 
         self._send_header_info(header_info)
@@ -150,11 +151,17 @@ class SessionHandler:
     @reconnect
     def start_download(self, video_path: str, video_name: str, save_path: str, downloading_info: dict):
 
-        download_path = os.path.join(save_path, video_name)
+        download_path = Path.home().joinpath(save_path, video_name)
 
-        if os.path.exists(download_path):
-            # 读取
-            received = os.stat(download_path).st_size
+        # 有此文件说明已经下载完成
+        if Path(download_path).is_file():
+            return
+
+        download_path = str(download_path) + settings.INCOMPLETE_SUFFIX
+
+        if Path(download_path).is_file():
+            # 读取大小
+            received = Path(download_path).stat().st_size
         else:
             received = 0
 
@@ -169,7 +176,7 @@ class SessionHandler:
         header_info = to_bytes(
             command="download",
             code=self.download_command,
-            msgSize=sys.getsizeof(body_info)
+            msgSize=len(body_info)
         )
 
         self._send_header_info(header_info)
@@ -179,6 +186,7 @@ class SessionHandler:
         # 更新下载信息
         downloading_info["video_dir"] = video_path
         downloading_info["video"] = video_name
+
         self._write(download_path, video_info["videoSize"], downloading_info, received)
 
     @reconnect
@@ -192,7 +200,7 @@ class SessionHandler:
         header_info = to_bytes(
             command="version",
             code=self.get_new_version,
-            msgSize=sys.getsizeof(body_info)
+            msgSize=len(body_info)
         )
 
         self._send_header_info(header_info)
@@ -283,9 +291,11 @@ class SessionHandler:
                 downloading_info["value"] = received
 
         t2 = time.time()
-
         print(f"費やした時間：{t2 - t1}秒")
-
         # 取消session超时时间
         self.session.settimeout(None)
+        # 取消文件正在下载的后缀
+        old_name = Path(download_path)
+        new_name = download_path.split(settings.INCOMPLETE_SUFFIX)[0]
+        old_name.replace(new_name)
         print("ダウンロード完成")

@@ -1,10 +1,8 @@
-import os
 import sys
+from pathlib import Path
 from typing import List
 
-from src.backend.utils.utils import get_desktop_path
-
-RootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RootPath = Path.cwd()
 
 
 def get_root_path():
@@ -18,12 +16,12 @@ class Settings:
         self.Debug = True
         self.VIDEO_FORMAT: List[str] = ["mp4", "mkv", "rmvb", "flv"]
         self.INCOMPLETE_SUFFIX = ".yuzuhi"
+        self.Home = Path(__file__)
         # path
-        self.RESOURCES_PATH = os.path.join(get_root_path(), "resources")
+        self.RESOURCES_PATH = Path(get_root_path()).joinpath("resources")
         self.ICON_PATH = "catherine.ico"
         self.RIGHT_LABEL_PATH = "catherine.txt"
         self.GIF_PATH = "loading{}"
-        self.NEW_PATCH_DIR = os.path.join(get_desktop_path(), "NewPatch")
         # total size
         self.TOTAL_WIDTH: int = 700
         self.TOTAL_HEIGHT: int = 425
@@ -89,6 +87,7 @@ class Settings:
         self.DOWNLOADING_LABEL_Y = 330
         self.DOWNLOADING_LABEL_FONT: tuple = ("Arial", 7)
         self.DOWNLOADING_LABEL_STR: str = "ダウンロード中 {}：{}"
+        self.DOWNLOADING_LABEL_COMPLETE_STR: str = "ダウンロード完了"
         # progress label
         self.PENDING_DOWNLOAD_LABEL_X = 260
         self.PENDING_DOWNLOAD_LABEL_Y = 345
@@ -109,7 +108,7 @@ class Settings:
 
     @property
     def GIF_NUMBER(self) -> int:
-        return len([file for file in os.listdir(self.RESOURCES_PATH) if file.split(".")[-1] == "gif"])
+        return len([file for file in Path(self.RESOURCES_PATH).iterdir() if file.suffix == ".gif"])
 
 
 settings = Settings()
