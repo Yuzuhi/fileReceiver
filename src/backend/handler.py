@@ -1,13 +1,12 @@
 import json
 import socket
 import struct
-
 import time
 from pathlib import Path
 from typing import Optional, List
 
 from src.backend.constant import FAIL_CODE, SUCCESS_CODE
-from src.backend.exceptions import DisconnectionException
+from src.backend.exceptions import DisconnectionException, ConnectionCloseException
 from src.backend.utils.utils import to_bytes
 from src.settings import settings
 
@@ -23,7 +22,11 @@ def reconnect(func):
         :return:
         """
         if self.close_flag:
-            raise DisconnectionException
+            try:
+                self.session.close()
+            finally:
+                raise ConnectionCloseException
+
         try:
             return func(self, *args, **kwargs)
         except socket.timeout as e:
@@ -32,6 +35,7 @@ def reconnect(func):
                 raise e
             else:
                 self._reconnect()
+                # 关闭连接
                 self.disconnect = False
                 return func(self, *args, **kwargs)
         except socket.error as e:
@@ -72,6 +76,12 @@ class SessionHandler:
             else:
                 raise e
 
+        if self.close_flag:
+            try:
+                self.session.close()
+            finally:
+                raise ConnectionCloseException
+
     def _reconnect(self) -> bool:
         server = '{} {}'.format(self.server_ip, self.server_port)
         while True:
@@ -79,7 +89,7 @@ class SessionHandler:
             time.sleep(2.0)
             try:
                 if self.close_flag:
-                    return False
+                    raise ConnectionCloseException
                 self.session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.session.connect((self.server_ip, self.server_port))
             except ConnectionRefusedError:
@@ -274,7 +284,10 @@ class SessionHandler:
 
             while received < size:
                 if self.close_flag:
-                    return
+                    try:
+                        self.session.close()
+                    finally:
+                        raise ConnectionCloseException
                 value = size - received
                 if value > 4096:
                     block = self.session.recv(4096)

@@ -1,5 +1,6 @@
 import random
 import tkinter
+from pathlib import Path
 from tkinter import ttk
 from typing import Generator
 from PIL import Image, ImageSequence, ImageTk
@@ -7,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from src.backend.handler import SessionHandler
 from src.backend.utils.parser import Config
-from src.backend.utils.utils import has_new_patch
+from src.backend.utils.utils import has_new_patch, get_random_file
 from src.settings import settings
 
 executor = ThreadPoolExecutor(max_workers=5)
@@ -75,11 +76,9 @@ class Events:
                                wait_to_pack: tkinter.Frame
                                ):
 
-        gifs = [gif for gif in os.listdir(settings.RESOURCES_PATH) if
-                gif.endswith(".gif") and gif.startswith("loading")]
-
-        gif_path = settings.RESOURCES_PATH.joinpath(random.choice(gifs))
-
+        gif_path = get_random_file(settings.RESOURCES_PATH.joinpath(settings.LOADING_DIR))
+        if not Path(gif_path).is_file():
+            return
 
         # 创建生成器
         frame_generator = self._gen_frame(gif_path)

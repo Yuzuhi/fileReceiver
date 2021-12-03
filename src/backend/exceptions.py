@@ -7,3 +7,6 @@ class ReconnectSuccessException(Exception):
     pass
 
 
+class ConnectionCloseException(Exception):
+    def __str__(self):
+        return "main thread has been closed."

@@ -3,7 +3,7 @@ from pathlib import Path
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
 
-from src.backend.utils.utils import load_ascii_art, get_desktop_path
+from src.backend.utils.utils import load_ascii_art, get_desktop_path, load_random_file
 from src.gui.events import Events, executor
 from src.settings import settings
 
@@ -46,7 +46,6 @@ class Application(tkinter.Frame):
         self.videos = future.result()
         self.__configure_left_tree()
 
-
     def __create_widget(self):
         """创建组件"""
         # 初始化right_box
@@ -60,9 +59,8 @@ class Application(tkinter.Frame):
 
         # 右侧展示图片的label
         self.right_label = tkinter.Label(self,
-                                         text=load_ascii_art(
-                                             settings.Home.joinpath(settings.RESOURCES_PATH,
-                                                                    settings.RIGHT_LABEL_PATH)),
+                                         text=load_random_file(
+                                             settings.RESOURCES_PATH.joinpath(settings.RIGHT_LABEL_DIR)),
                                          font=settings.RIGHT_LABEL_FONT)
 
         # use right_box size

@@ -20,8 +20,8 @@ class Settings:
         # path
         self.RESOURCES_PATH = Path(get_root_path()).joinpath("resources")
         self.ICON_PATH = "catherine.ico"
-        self.RIGHT_LABEL_PATH = "catherine.txt"
-        self.GIF_PATH = "loading{}"
+        self.RIGHT_LABEL_DIR = "right_label"
+        self.LOADING_DIR = "loading"
         # total size
         self.TOTAL_WIDTH: int = 700
         self.TOTAL_HEIGHT: int = 425
@@ -53,7 +53,7 @@ class Settings:
         self.RECONNECT_GIF_LABEL_Y = 370
         self.RECONNECT_GIF_LABEL_PATH = "reconnecting.gif"
         # right_label
-        self.RIGHT_LABEL_FONT: tuple = ("Arial", 2)
+        self.RIGHT_LABEL_FONT: tuple = ("Lucida Grande", 8)
         # right box size
         self.RIGHT_BOX_HEIGHT = 300
         self.RIGHT_BOX_WIDTH = 430

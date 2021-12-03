@@ -1,8 +1,8 @@
-import os
 import socket
 import json
-import sys
 import winreg
+import random
+from pathlib import Path
 
 
 def get_host_ip():
@@ -19,10 +19,13 @@ def to_bytes(**kwargs) -> bytes:
         return json.dumps(kwargs).encode("utf-8")
 
 
+# def get_desktop_path() -> str:
+#     key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders')
+#     path = winreg.QueryValueEx(key, "Desktop")[0]
+#     return path
+
 def get_desktop_path() -> str:
-    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders')
-    path = winreg.QueryValueEx(key, "Desktop")[0]
-    return path
+    return str(Path.home().joinpath("Desktop"))
 
 
 def video_size_str(size: int) -> str:
@@ -37,10 +40,20 @@ def video_size_str(size: int) -> str:
     return str('%.2f' % size) + unit[count]
 
 
-def load_ascii_art(path: str):
-    with open(path, "r") as f:
+def load_ascii_art(file: str):
+    with open(file, "r") as f:
         data = f.read()
     return data
+
+
+def get_random_file(dir_path: str) -> str:
+    dir_path = Path(dir_path)
+    file = random.choice(list(dir_path.iterdir()))
+    return dir_path.joinpath(file)
+
+
+def load_random_file(dir_path: str) -> str:
+    return load_ascii_art(get_random_file(dir_path))
 
 
 def has_new_patch(new: str, now: str) -> bool:
