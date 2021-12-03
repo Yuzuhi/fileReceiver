@@ -1,4 +1,3 @@
-import random
 import tkinter
 from pathlib import Path
 from tkinter import ttk

@@ -3,6 +3,7 @@ from pathlib import Path
 from tkinter import ttk, messagebox
 from tkinter.filedialog import askdirectory
 
+from src.backend.utils.parser import Config
 from src.backend.utils.utils import load_ascii_art, get_desktop_path, load_random_file
 from src.gui.events import Events, executor
 from src.settings import settings
@@ -32,6 +33,8 @@ class Application(tkinter.Frame):
         future = executor.submit(self.events.get_videos)
         # 添加回调函数，根据加载的资源配置left tree 与 right box
         future.add_done_callback(self._callback)
+        # 开启一个线程去检查服务器的ip地址与端口是否会改变，如果是，则修改本地文件config.ini保存的服务器ip与端口
+        executor.submit(self._check_server)
         # 添加自动更新检查掉线的任务，掉线时会播放重连UI
         self.events.start_disconnection_check(self,
                                               self.disconnect_text_label,
@@ -258,3 +261,22 @@ class Application(tkinter.Frame):
     def on_closing(self):
         self.events.session.close_flag = True
         self.master.destroy()
+
+    # ------------------------------------------- update ----------------------------------------------------
+
+    def _check_server(self):
+        """检查服务器的ip与port"""
+        ip, port = self.events.session.get_new_host()
+
+        if not ip or not port:
+            return
+
+        if ip != Config.get("server").get("host"):
+            temp = "; this project settings\n[project]version ="
+            temp += Config.get("project").get("version")
+            temp += "\n; server configs\nhost = "
+            temp += ip + "\n"
+            temp += f"port = {port}"
+
+            with open(settings.CONFIG_FILE_PATH, "w") as f:
+                f.write(temp)

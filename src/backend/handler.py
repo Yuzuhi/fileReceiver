@@ -55,6 +55,7 @@ class SessionHandler:
     get_videos_command = 1
     download_command = 2
     get_new_version = 3
+    get_new_host_command = 4
 
     def __init__(self, server_ip: str, server_port: int, auto_reconnect: bool = True):
         self.server_ip = server_ip
@@ -217,6 +218,27 @@ class SessionHandler:
         self.session.send(body_info)
 
         return self._receive_response().get("version")
+
+    @reconnect
+    def get_new_host(self):
+
+        body_info = to_bytes(
+            command="host",
+            code=self.get_new_host_command,
+        )
+
+        header_info = to_bytes(
+            command="host",
+            code=self.get_new_host_command,
+            msgSize=len(body_info)
+        )
+
+        self._send_header_info(header_info)
+        self.session.send(body_info)
+
+        response = self._receive_response()
+
+        return response.get("ip"), response.get("port")
 
     def _send_header_info(self, header_info: bytes):
 

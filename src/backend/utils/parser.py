@@ -68,11 +68,12 @@ class IniParser:
         self.paramList = []
 
 
-if settings.Debug:
-    ini_file_path = RootPath.joinpath("config.ini")
-else:
-    ini_file = Path(__file__)
-    ini_file_path = ini_file.joinpath("config.ini")
+# if settings.Debug:
+# ini_file_path = RootPath.joinpath("config.ini")
+# else:
+#     ini_file = Path(__file__)
+#     ini_file_path = ini_file.joinpath("config.ini")
 
-parser = IniParser(ini_file_path)
+# print(ini_file_path)
+parser = IniParser(settings.CONFIG_FILE_PATH)
 Config = parser.load()

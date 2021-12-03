@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 
 RootPath = Path.cwd()
+print(RootPath)
 
 
 def get_root_path():
@@ -13,7 +14,7 @@ class Settings:
 
     def __init__(self):
         # project
-        self.Debug = True
+        self.Debug = False
         self.VIDEO_FORMAT: List[str] = ["mp4", "mkv", "rmvb", "flv"]
         self.INCOMPLETE_SUFFIX = ".yuzuhi"
         self.Home = Path(__file__)
@@ -22,6 +23,7 @@ class Settings:
         self.ICON_PATH = "catherine.ico"
         self.RIGHT_LABEL_DIR = "right_label"
         self.LOADING_DIR = "loading"
+        self.CONFIG_FILE_PATH = RootPath.joinpath("config.ini")
         # total size
         self.TOTAL_WIDTH: int = 700
         self.TOTAL_HEIGHT: int = 425

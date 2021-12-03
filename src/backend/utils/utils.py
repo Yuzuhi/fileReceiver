@@ -1,6 +1,6 @@
 import socket
 import json
-import winreg
+# import winreg
 import random
 from pathlib import Path
 
